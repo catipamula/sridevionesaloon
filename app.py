@@ -1,7 +1,10 @@
 import json
 import os
+import socket
 import sqlite3
 import smtplib
+import urllib.error
+import urllib.request
 from datetime import datetime, timedelta
 from email.message import EmailMessage
 from email.utils import formatdate, make_msgid
@@ -33,15 +36,23 @@ SALON_PHONE = sanitize_env_value("SALON_PHONE", "+91 73961 44248")
 SALON_MAPS_URL = sanitize_env_value("SALON_MAPS_URL", "https://maps.app.goo.gl/suHNM6yaQBY29TX8A")
 SALON_TIMEZONE = sanitize_env_value("SALON_TIMEZONE", "Asia/Kolkata")
 SALON_ADDRESS = sanitize_env_value("SALON_ADDRESS", "Bommuru Centre, Near NTR Statue, Rajuvolu Road, Kotta Bommuru, AP 533124, India")
+
+# SMTP Configuration
 SMTP_HOST = sanitize_env_value("SMTP_HOST", "smtp.gmail.com")
 SMTP_PORT = int(sanitize_env_value("SMTP_PORT", "587"))
 SMTP_EMAIL = sanitize_env_value("SMTP_EMAIL", "pavankoneti85@gmail.com")
 SMTP_APP_PASSWORD = sanitize_env_value("SMTP_APP_PASSWORD", "")
+
+# Optional HTTP Email API keys (Works seamlessly on Render Free Tier via Port 443)
+RESEND_API_KEY = sanitize_env_value("RESEND_API_KEY", "")
+BREVO_API_KEY = sanitize_env_value("BREVO_API_KEY", "")
+EMAIL_SENDER = sanitize_env_value("EMAIL_SENDER", "")
+
 SERVICE_DURATION_MINUTES = int(sanitize_env_value("SERVICE_DURATION_MINUTES", "60"))
 FOLLOWUP_INTERVAL_MONTHS = int(sanitize_env_value("FOLLOWUP_INTERVAL_MONTHS", "1"))
 ENABLE_MONTHLY_FOLLOWUPS = sanitize_env_value("ENABLE_MONTHLY_FOLLOWUPS", "false").lower() in {"1", "true", "yes", "on"}
 MAX_EMAIL_RETRIES = int(sanitize_env_value("MAX_EMAIL_RETRIES", "3"))
-SMTP_CHECK_ON_STARTUP = sanitize_env_value("SMTP_CHECK_ON_STARTUP", "true").lower() in {"1", "true", "yes", "on"}
+SMTP_CHECK_ON_STARTUP = sanitize_env_value("SMTP_CHECK_ON_STARTUP", "false").lower() in {"1", "true", "yes", "on"}
 
 app = Flask(__name__, static_folder=".", static_url_path="")
 
@@ -168,15 +179,99 @@ def build_email_message(to_email, subject, plain_body, html_body=None):
     return message
 
 
+def send_via_resend(destination_email: str, subject: str, plain_body: str, html_body: str = None):
+    sender = EMAIL_SENDER or f"{SALON_NAME} <onboarding@resend.dev>"
+    payload = {
+        "from": sender,
+        "to": [destination_email],
+        "subject": subject,
+        "text": plain_body,
+    }
+    if html_body:
+        payload["html"] = html_body
+
+    req = urllib.request.Request(
+        "https://api.resend.com/emails",
+        data=json.dumps(payload).encode("utf-8"),
+        headers={
+            "Authorization": f"Bearer {RESEND_API_KEY}",
+            "Content-Type": "application/json",
+            "User-Agent": "SriDeviSaloon/1.0",
+        },
+        method="POST",
+    )
+    try:
+        with urllib.request.urlopen(req, timeout=12) as response:
+            return response.read()
+    except urllib.error.HTTPError as err:
+        err_msg = err.read().decode("utf-8", errors="ignore")
+        raise RuntimeError(f"Resend API error ({err.code}): {err_msg}") from err
+
+
+def send_via_brevo(destination_email: str, subject: str, plain_body: str, html_body: str = None):
+    sender_email = EMAIL_SENDER or SMTP_EMAIL or SALON_EMAIL
+    payload = {
+        "sender": {"name": SALON_NAME, "email": sender_email},
+        "to": [{"email": destination_email}],
+        "subject": subject,
+        "textContent": plain_body,
+    }
+    if html_body:
+        payload["htmlContent"] = html_body
+
+    req = urllib.request.Request(
+        "https://api.brevo.com/v3/smtp/email",
+        data=json.dumps(payload).encode("utf-8"),
+        headers={
+            "api-key": BREVO_API_KEY,
+            "Content-Type": "application/json",
+            "User-Agent": "SriDeviSaloon/1.0",
+        },
+        method="POST",
+    )
+    try:
+        with urllib.request.urlopen(req, timeout=12) as response:
+            return response.read()
+    except urllib.error.HTTPError as err:
+        err_msg = err.read().decode("utf-8", errors="ignore")
+        raise RuntimeError(f"Brevo API error ({err.code}): {err_msg}") from err
+
+
 def send_email(destination_email: str, subject: str, plain_body: str, html_body: str = None):
+    # 1. Check for modern HTTP APIs first (Bypasses Render Free Tier port 587/465 block)
+    if RESEND_API_KEY:
+        send_via_resend(destination_email, subject, plain_body, html_body)
+        return
+
+    if BREVO_API_KEY:
+        send_via_brevo(destination_email, subject, plain_body, html_body)
+        return
+
+    # 2. Standard SMTP (Gmail or Custom SMTP)
     if not SMTP_HOST or not SMTP_EMAIL or not SMTP_APP_PASSWORD:
-        raise RuntimeError("SMTP configuration is missing. Check the environment variables.")
+        raise RuntimeError(
+            "Email credentials missing. Please set SMTP_APP_PASSWORD (or RESEND_API_KEY / BREVO_API_KEY) in your environment variables."
+        )
 
     message = build_email_message(destination_email, subject, plain_body, html_body)
-    with smtplib.SMTP(SMTP_HOST, SMTP_PORT) as server:
-        server.starttls()
-        server.login(SMTP_EMAIL, SMTP_APP_PASSWORD)
-        server.send_message(message)
+
+    try:
+        if SMTP_PORT == 465:
+            with smtplib.SMTP_SSL(SMTP_HOST, SMTP_PORT, timeout=12) as server:
+                server.login(SMTP_EMAIL, SMTP_APP_PASSWORD)
+                server.send_message(message)
+        else:
+            with smtplib.SMTP(SMTP_HOST, SMTP_PORT, timeout=12) as server:
+                server.starttls()
+                server.login(SMTP_EMAIL, SMTP_APP_PASSWORD)
+                server.send_message(message)
+    except (socket.timeout, TimeoutError, smtplib.SMTPConnectError, OSError) as err:
+        raise RuntimeError(
+            f"SMTP connection to {SMTP_HOST}:{SMTP_PORT} timed out or failed ({err}). "
+            "Note: Render blocks outbound SMTP ports 25, 465, and 587 on their Free plan. "
+            "To send emails on Render Free tier, use RESEND_API_KEY or BREVO_API_KEY (HTTP Port 443). "
+            "If using a paid plan, ensure SMTP_APP_PASSWORD is set in Render Dashboard Environment variables."
+        ) from err
 
 
 def format_display_time(time_str: str) -> str:
@@ -845,11 +940,17 @@ def api_smtp_test():
 def run_startup_smtp_check():
     if not SMTP_CHECK_ON_STARTUP:
         return
-    try:
-        send_smtp_test_email()
-        app.logger.info("SMTP startup health-check email sent successfully.")
-    except Exception as exc:
-        app.logger.warning("SMTP startup health check failed: %s", exc)
+
+    import threading
+
+    def _check():
+        try:
+            send_smtp_test_email()
+            app.logger.info("SMTP startup health-check email sent successfully.")
+        except Exception as exc:
+            app.logger.warning("SMTP startup health check failed: %s", exc)
+
+    threading.Thread(target=_check, daemon=True).start()
 
 
 scheduler = BackgroundScheduler(
@@ -864,4 +965,5 @@ schedule_owner_notification_jobs()
 
 
 if __name__ == "__main__":
-    app.run(host="0.0.0.0", port=5000, debug=False, use_reloader=False)
+    port = int(os.environ.get("PORT", 5000))
+    app.run(host="0.0.0.0", port=port, debug=False, use_reloader=False)

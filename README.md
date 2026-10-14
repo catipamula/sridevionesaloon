@@ -137,6 +137,43 @@ http://localhost:5000
 
 ---
 
+## Deploying to Render (Important: Read If Using Render)
+
+### Why standard SMTP fails on Render Free Tier
+Render **blocks outbound traffic on ports 25, 465, and 587 on all Free-tier services** to prevent spam. Attempting to connect to `smtp.gmail.com:587` from Render's free tier will result in a connection timeout (`ETIMEDOUT`).
+
+### Solution 1: Use an HTTP Email API (100% Free on Render)
+Because Render allows standard HTTPS traffic (**Port 443**), the application supports sending emails via REST API:
+
+1. **Option A — Resend** (Recommended, 3,000 free emails/mo):
+   - Sign up at [resend.com](https://resend.com) and generate a free API key.
+   - In Render Dashboard under **Environment**, add:
+     `RESEND_API_KEY=re_your_api_key_here`
+     `EMAIL_SENDER=Sri Devi One Saloon <onboarding@resend.dev>`
+
+2. **Option B — Brevo** (300 free emails/day):
+   - Sign up at [brevo.com](https://brevo.com) and generate an API key.
+   - In Render Dashboard under **Environment**, add:
+     `BREVO_API_KEY=xkeysib-your_api_key_here`
+
+### Solution 2: If using a Paid Render Plan ($7/mo Starter)
+Paid Render plans unblock outbound ports 587 and 465. To use Gmail SMTP on a paid plan:
+1. In Render Dashboard -> Web Service -> **Environment**, add these variables:
+   - `SMTP_HOST`: `smtp.gmail.com`
+   - `SMTP_PORT`: `587`
+   - `SMTP_EMAIL`: `pavankoneti85@gmail.com`
+   - `SMTP_APP_PASSWORD`: `your-16-char-app-password`
+   - `SALON_EMAIL`: `pavankoneti85@gmail.com`
+   - `SALON_NAME`: `Sri Devi One Saloon`
+   - `SALON_TIMEZONE`: `Asia/Kolkata`
+   - `SMTP_CHECK_ON_STARTUP`: `false`
+
+### Render Build & Start Commands
+- **Build Command**: `pip install -r requirements.txt`
+- **Start Command**: `gunicorn app:app` (or `python app.py`)
+
+---
+
 ## Business Details
 
 | Detail | Information |
