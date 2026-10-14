@@ -542,8 +542,13 @@ address {
 }
 
 .nav-logo-wrap {
+<<<<<<< HEAD
   width: 40px;
   height: 40px;
+=======
+  width: 50px;
+  height: 50px;
+>>>>>>> 8cadb3377467d427079034c5e6fa00411f78e766
   border-radius: var(--radius-md);
   overflow: hidden;
   background: transparent;
@@ -763,11 +768,16 @@ address {
 
 @media (max-width: 480px) {
   .nav-brand-en { font-size: 0.9rem; }
+<<<<<<< HEAD
   .nav-logo-wrap { width: 34px; height: 34px; }
+=======
+  .nav-logo-wrap { width: 42px; height: 42px; }
+>>>>>>> 8cadb3377467d427079034c5e6fa00411f78e766
   .nav-container { padding: 0 var(--space-md); gap: var(--space-sm); }
 }
 
 /* ─────────────────────────────────────────────
+<<<<<<< HEAD
    11b. WELCOME POPUP MODAL (Half-Screen Dialog with 4-Side Spacing)
 ───────────────────────────────────────────── */
 .welcome-modal-overlay {
@@ -964,6 +974,8 @@ address {
 }
 
 /* ─────────────────────────────────────────────
+=======
+>>>>>>> 8cadb3377467d427079034c5e6fa00411f78e766
    12. HERO SECTION
 ───────────────────────────────────────────── */
 .hero {
@@ -1964,8 +1976,11 @@ address {
   width: 100%;
   outline: none;
   box-sizing: border-box;
+<<<<<<< HEAD
   -webkit-appearance: none;
   appearance: none;
+=======
+>>>>>>> 8cadb3377467d427079034c5e6fa00411f78e766
 }
 
 .form-control::placeholder { color: var(--clr-text-muted); }
@@ -2020,10 +2035,13 @@ textarea.form-control {
     grid-template-columns: 1fr;
     gap: var(--space-md);
   }
+<<<<<<< HEAD
 
   .form-control {
     font-size: 16px; /* Prevents auto-zoom on iOS/iPhone Safari */
   }
+=======
+>>>>>>> 8cadb3377467d427079034c5e6fa00411f78e766
 }
 
 /* ─────────────────────────────────────────────
@@ -2473,6 +2491,28 @@ textarea.form-control {
   justify-content: center;
 }
 
+<<<<<<< HEAD
+=======
+.location-phone-display {
+  display: flex;
+  align-items: center;
+  gap: var(--space-xs);
+  font-size: 0.875rem;
+  color: var(--clr-text-dim);
+  border-top: 1px solid var(--clr-border);
+  padding-top: var(--space-md);
+}
+
+.location-phone-display [data-lucide] { color: var(--clr-gold); }
+
+.location-phone-display a {
+  color: var(--clr-gold);
+  font-weight: 600;
+}
+
+.location-phone-display a:hover { text-decoration: underline; }
+
+>>>>>>> 8cadb3377467d427079034c5e6fa00411f78e766
 .location-map-wrap {
   display: flex;
   flex-direction: column;
@@ -2915,7 +2955,10 @@ textarea.form-control {
 @media (prefers-reduced-motion: reduce) {
   .hero-floating-card { animation: none; }
   .announcement-bar { animation: none; }
+<<<<<<< HEAD
   .welcome-banner { animation: none; transition: none; }
+=======
+>>>>>>> 8cadb3377467d427079034c5e6fa00411f78e766
   .reveal-fade-up,
   .reveal-fade-left,
   .reveal-fade-right {
