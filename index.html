@@ -1,0 +1,1327 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="description" content="Sri Devi One Saloon – Premium hair salon and barber shop in Bommuru, Kotta Bommuru, Andhra Pradesh. Professional haircut ₹120, shaving ₹70, facials & more." />
+  <meta name="keywords" content="salon, barber, haircut, Bommuru, Kotta Bommuru, Rajamahendravaram, Rajahmundry, Andhra Pradesh, shaving, facial, Sri Devi" />
+  <meta name="author" content="Sri Devi One Saloon" />
+  <meta name="robots" content="index, follow" />
+
+  <!-- Open Graph -->
+  <meta property="og:type" content="business.business" />
+  <meta property="og:title" content="Sri Devi One Saloon | Premium Hair Salon – Bommuru, Andhra Pradesh" />
+  <meta property="og:description" content="Professional haircuts, shaving, facials & grooming services at Sri Devi One Saloon, Bommuru. Rated 5.0/5 on Google." />
+  <meta property="og:image" content="assets/logo.png" />
+  <meta property="og:url" content="https://sridevi-saloon.netlify.app" />
+  <meta property="og:site_name" content="Sri Devi One Saloon" />
+
+  <title>Sri Devi One Saloon | Premium Hair Salon – Bommuru, Andhra Pradesh</title>
+
+  <!-- Favicon -->
+  <link rel="icon" type="image/jpeg" href="assets/logo.png" />
+
+  <!-- Google Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;600;700;900&family=Inter:wght@300;400;500;600&family=Noto+Sans+Telugu:wght@400;600;700&display=swap" rel="stylesheet" />
+
+  <!-- Lucide Icons CDN -->
+  <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.js"></script>
+
+  <!-- Stylesheet -->
+  <link rel="stylesheet" href="css/style.css?v=2.3" />
+</head>
+<body>
+
+  <!-- ═══════════════════════════════════════════
+       ANNOUNCEMENT BAR
+  ═══════════════════════════════════════════ -->
+  <div class="announcement-bar" role="banner" aria-label="Salon announcement">
+    <div class="announcement-inner">
+      <span class="announcement-telugu">Sri Devi One Saloon</span>
+      <span class="announcement-divider" aria-hidden="true">·</span>
+      <span class="announcement-tagline">Look sharp. Feel confident. Book your grooming today.</span>
+      <span class="announcement-divider" aria-hidden="true">·</span>
+      <a href="#booking" class="announcement-cta" aria-label="Book an appointment at Sri Devi One Saloon">
+        <span data-lucide="calendar-check" class="icon-xs" aria-hidden="true"></span>
+        Book Your Visit
+      </a>
+    </div>
+  </div>
+
+  <!-- ═══════════════════════════════════════════
+       NAVIGATION
+  ═══════════════════════════════════════════ -->
+  <header class="site-header" id="site-header" role="banner">
+    <nav class="navbar" aria-label="Main navigation">
+      <div class="nav-container">
+
+        <!-- Logo -->
+        <a href="#home" class="nav-logo-link" aria-label="Sri Devi One Saloon – go to home">
+          <div class="nav-logo-wrap">
+            <img
+              src="assets/logo.png"
+              alt="Sri Devi One Saloon logo"
+              class="nav-logo-img"
+              width="40"
+              height="40"
+            />
+          </div>
+          <div class="nav-brand-text">
+            <span class="nav-brand-en">Sri Devi One Saloon</span>
+            <span class="nav-brand-te">Sri Devi One Saloon</span>
+          </div>
+        </a>
+
+        <!-- Desktop Nav Links -->
+        <ul class="nav-links" role="list">
+          <li><a href="#home" class="nav-link" aria-current="page">Home</a></li>
+          <li><a href="#services" class="nav-link">Services</a></li>
+          <li><a href="#price-list" class="nav-link">Price List</a></li>
+          <li><a href="#about" class="nav-link">About</a></li>
+          <li><a href="#reviews" class="nav-link">Reviews</a></li>
+          <li><a href="#location" class="nav-link">Location</a></li>
+          <li><a href="#contact" class="nav-link">Contact</a></li>
+        </ul>
+
+        <!-- CTA Button -->
+        <a href="#booking" class="btn btn-gold nav-book-btn" aria-label="Book an appointment at Sri Devi One Saloon">
+          Book Appointment
+        </a>
+
+        <!-- Hamburger -->
+        <button
+          class="hamburger"
+          id="hamburger"
+          aria-label="Open navigation menu"
+          aria-expanded="false"
+          aria-controls="mobile-menu"
+        >
+          <span class="hamburger-line"></span>
+          <span class="hamburger-line"></span>
+          <span class="hamburger-line"></span>
+        </button>
+
+      </div>
+
+      <!-- Mobile Menu -->
+      <div class="mobile-menu" id="mobile-menu" aria-hidden="true" role="dialog" aria-label="Mobile navigation menu">
+        <button class="mobile-close-btn" id="mobile-close-btn" aria-label="Close navigation menu">
+          <span data-lucide="x" class="icon-md" aria-hidden="true"></span>
+        </button>
+        <ul class="mobile-nav-links" role="list">
+          <li><a href="#home" class="mobile-nav-link">Home</a></li>
+          <li><a href="#services" class="mobile-nav-link">Services</a></li>
+          <li><a href="#price-list" class="mobile-nav-link">Price List</a></li>
+          <li><a href="#about" class="mobile-nav-link">About</a></li>
+          <li><a href="#reviews" class="mobile-nav-link">Reviews</a></li>
+          <li><a href="#location" class="mobile-nav-link">Location</a></li>
+          <li><a href="#contact" class="mobile-nav-link">Contact</a></li>
+          <li>
+            <a href="#booking" class="btn btn-gold mobile-book-btn">Book Appointment</a>
+          </li>
+        </ul>
+      </div>
+    </nav>
+  </header>
+
+  <!-- ═══════════════════════════════════════════
+       WELCOME POPUP MODAL (Half screen with 4-side spacing)
+  ═══════════════════════════════════════════ -->
+  <div
+    class="welcome-modal-overlay"
+    id="welcome-modal-overlay"
+    role="dialog"
+    aria-modal="true"
+    aria-labelledby="welcome-modal-title"
+    aria-describedby="welcome-banner-text"
+  >
+    <div class="welcome-modal-dialog">
+      <!-- Decorative Gold Corner Accents -->
+      <div class="welcome-modal-corner welcome-modal-corner--tl" aria-hidden="true"></div>
+      <div class="welcome-modal-corner welcome-modal-corner--br" aria-hidden="true"></div>
+
+      <!-- Close Button -->
+      <button
+        type="button"
+        class="welcome-modal-close"
+        id="welcome-banner-close"
+        aria-label="Close welcome pop-up"
+        title="Close (Esc)"
+      >
+        <span data-lucide="x" class="icon-sm" aria-hidden="true"></span>
+      </button>
+
+      <!-- Modal Header -->
+      <div class="welcome-modal-header">
+        <div class="welcome-modal-icon-badge" aria-hidden="true">
+          <span class="welcome-modal-emoji">✂️</span>
+        </div>
+        <p class="welcome-modal-eyebrow">PREMIUM SALON EXPERIENCE</p>
+        <h2 class="welcome-modal-title" id="welcome-modal-title">Sri Devi One Saloon</h2>
+      </div>
+
+      <!-- Modal Body (Rotating Welcome Message) -->
+      <div class="welcome-modal-body">
+        <div class="welcome-modal-quote-mark" aria-hidden="true">“</div>
+        <p class="welcome-modal-text" id="welcome-banner-text">
+          Welcome to Sri Devi One Saloon ✂️ Your Style. Your Confidence. Our Passion.
+        </p>
+      </div>
+
+      <!-- Modal Footer Actions -->
+      <div class="welcome-modal-footer">
+        <a href="#booking" class="btn btn-gold welcome-modal-cta" id="welcome-modal-book-btn">
+          <span data-lucide="calendar-check" class="icon-xs" aria-hidden="true"></span>
+          Book Appointment
+        </a>
+        <button type="button" class="btn btn-outline welcome-modal-dismiss" id="welcome-modal-dismiss-btn">
+          Explore Website
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══════════════════════════════════════════
+       HERO SECTION
+  ═══════════════════════════════════════════ -->
+  <section class="hero" id="home" aria-labelledby="hero-heading">
+    <div class="hero-bg-decoration" aria-hidden="true">
+      <div class="hero-deco-line hero-deco-line--1"></div>
+      <div class="hero-deco-line hero-deco-line--2"></div>
+      <div class="hero-deco-circle" aria-hidden="true"></div>
+    </div>
+
+    <div class="hero-container">
+      <!-- Left Content -->
+      <div class="hero-content reveal-fade-up">
+        <p class="hero-eyebrow">
+          <span class="eyebrow-line" aria-hidden="true"></span>
+          YOUR STYLE. YOUR IDENTITY.
+        </p>
+
+        <h1 class="hero-heading" id="hero-heading">
+          Look Sharp.<br />
+          <span class="text-gold">Feel Confident.</span>
+        </h1>
+
+        <p class="hero-subtext">
+          Experience professional grooming at <strong>Sri Devi One Saloon</strong> –
+          your trusted neighbourhood salon in Bommuru, Andhra Pradesh.
+        </p>
+
+        <p class="hero-telugu" lang="te">Sri Devi One Saloon</p>
+
+        <!-- Rating Badge -->
+        <div class="hero-rating" aria-label="Google rating: 5 out of 5 from reviews">
+          <div class="star-group" aria-hidden="true">
+            <span data-lucide="star" class="star-icon star--filled"></span>
+            <span data-lucide="star" class="star-icon star--filled"></span>
+            <span data-lucide="star" class="star-icon star--filled"></span>
+            <span data-lucide="star" class="star-icon star--filled"></span>
+            <span data-lucide="star" class="star-icon star--filled"></span>
+          </div>
+          <span class="rating-text"><strong>5.0</strong> / 5 &nbsp;·&nbsp;  Google Reviews</span>
+        </div>
+
+        <!-- CTA Buttons -->
+        <div class="hero-cta-group">
+          <a href="#booking" class="btn btn-gold btn-lg">
+            <span data-lucide="calendar-check" class="icon-sm" aria-hidden="true"></span>
+            Book Your Appointment
+          </a>
+          <a
+            href="https://maps.app.goo.gl/aBQx16ErauUBKbtz6"
+            class="btn btn-outline btn-lg"
+            target="_blank"
+            rel="noopener noreferrer"
+            aria-label="Get directions to Sri Devi One Saloon on Google Maps"
+          >
+            <span data-lucide="map-pin" class="icon-sm" aria-hidden="true"></span>
+            Get Directions
+          </a>
+        </div>
+      </div>
+
+      <!-- Right: Image -->
+      <div class="hero-image-wrap reveal-fade-left">
+        <div class="hero-image-frame">
+          <img
+            src="./assets/pavan_dad.png"
+            alt="Professional barber giving a stylish haircut in a well-lit salon – illustrative image"
+            class="hero-img"
+            width="800"
+            height="900"
+            loading="eager"
+            fetchpriority="high"
+            onerror="this.onerror=null; this.src=''; this.parentElement.classList.add('hero-img-fallback')"
+          />
+          <div class="hero-img-overlay" aria-hidden="true"></div>
+
+          <!-- Floating Price Card -->
+          <div class="hero-floating-card" aria-label="Starting price for haircut: ₹120">
+            <div class="floating-card-icon" aria-hidden="true">
+              <span data-lucide="scissors" class="icon-md"></span>
+            </div>
+            <div class="floating-card-info">
+              <span class="floating-card-label">Bujji</span>
+              <span class="floating-card-price"></span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Decorative Gold Lines -->
+        <div class="hero-deco-lines" aria-hidden="true">
+          <div class="deco-v-line"></div>
+          <div class="deco-h-line"></div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ═══════════════════════════════════════════
+       SERVICES SECTION
+  ═══════════════════════════════════════════ -->
+  <section class="services-section" id="services" aria-labelledby="services-heading">
+    <div class="section-container">
+      <div class="section-header reveal-fade-up">
+        <p class="section-eyebrow">What We Offer</p>
+        <h2 class="section-title" id="services-heading">Our Services</h2>
+        <p class="section-subtitle">Professional grooming tailored for every style and preference.</p>
+      </div>
+
+      <div class="services-grid">
+
+        <!-- Haircut -->
+        <article class="service-card reveal-fade-up" aria-labelledby="svc-haircut-title">
+          <div class="service-card-img-wrap">
+            <img
+              src="https://www.twentytwocut.com/lifestyle/images/the-rise-of-a-new-grooming-icon-in-bangkoks-barbershop-scene.jpg"
+              alt="Professional haircut service"
+              class="service-card-img"
+              width="600"
+              height="400"
+              loading="lazy"
+              onerror="this.onerror=null; this.parentElement.classList.add('img-fallback')"
+            />
+            <div class="service-card-price-badge" aria-label="Price ₹120">₹120</div>
+          </div>
+          <div class="service-card-body">
+            <div class="service-icon-wrap" aria-hidden="true">
+              <span data-lucide="scissors" class="icon-md"></span>
+            </div>
+            <h3 class="service-card-title" id="svc-haircut-title">Haircut</h3>
+            <p class="service-card-desc">Precision cut styled to suit your face shape and personal preference.</p>
+            <div class="service-card-footer">
+              <span class="service-price" aria-label="Price: ₹120">₹120</span>
+              <a href="#booking" class="btn btn-outline-sm book-service-btn" data-service="Haircut" aria-label="Book a haircut appointment">Book This Service</a>
+            </div>
+          </div>
+        </article>
+
+        <!-- Shaving -->
+        <article class="service-card reveal-fade-up" aria-labelledby="svc-shaving-title">
+          <div class="service-card-img-wrap">
+            <img
+              src="https://images.unsplash.com/photo-1675746435874-e72d846bdca5?fm=jpg&q=60&w=3000&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=NHwxMjA3fDA%3D"
+              class="service-card-img"
+              width="600"
+              height="400"
+              loading="lazy"
+              onerror="this.onerror=null; this.parentElement.classList.add('img-fallback')"
+            />
+            <div class="service-card-price-badge" aria-label="Price ₹70">₹70</div>
+          </div>
+          <div class="service-card-body">
+            <div class="service-icon-wrap" aria-hidden="true">
+              <span data-lucide="sparkles" class="icon-md"></span>
+            </div>
+            <h3 class="service-card-title" id="svc-shaving-title">Shaving</h3>
+            <p class="service-card-desc">Clean and precise shave for a fresh, confident look every time.</p>
+            <div class="service-card-footer">
+              <span class="service-price" aria-label="Price: ₹70">₹70</span>
+              <a href="#booking" class="btn btn-outline-sm book-service-btn" data-service="Shaving" aria-label="Book a shaving appointment">Book This Service</a>
+            </div>
+          </div>
+        </article>
+
+        <!-- Combo -->
+        <article class="service-card reveal-fade-up" aria-labelledby="svc-combo-title">
+          <div class="service-card-img-wrap">
+            <img
+              src="https://media.istockphoto.com/id/1428670682/photo/hipster-guy-sitting-at-salon.jpg?s=612x612&w=0&k=20&c=oIgLpRHerJQ6SFRLHDOckGHraIOo5T8okYVX-akQrfQ="
+              alt="Haircut and shaving combo service"
+              class="service-card-img"
+              width="600"
+              height="400"
+              loading="lazy"
+              onerror="this.onerror=null; this.parentElement.classList.add('img-fallback')"
+            />
+            <div class="service-card-price-badge" aria-label="Price ₹170">₹170</div>
+          </div>
+          <div class="service-card-body">
+            <div class="service-icon-wrap" aria-hidden="true">
+              <span data-lucide="layers" class="icon-md"></span>
+            </div>
+            <h3 class="service-card-title" id="svc-combo-title">Haircut + Shaving Combo</h3>
+            <p class="service-card-desc">Best value – get a fresh cut and a clean shave in one session.</p>
+            <div class="service-card-footer">
+              <span class="service-price" aria-label="Price: ₹170">₹170</span>
+              <a href="#booking" class="btn btn-outline-sm book-service-btn" data-service="Haircut + Shaving Combo" aria-label="Book a combo appointment">Book This Service</a>
+            </div>
+          </div>
+        </article>
+
+        <!-- Scrub -->
+        <article class="service-card reveal-fade-up" aria-labelledby="svc-scrub-title">
+          <div class="service-card-img-wrap">
+            <img
+              src="https://i.pinimg.com/736x/62/0d/7a/620d7ab4b33caed6f87698eaa69c9d1e.jpg"
+              alt="Skin scrub grooming service"
+              class="service-card-img"
+              width="600"
+              height="400"
+              loading="lazy"
+              onerror="this.onerror=null; this.parentElement.classList.add('img-fallback')"
+            />
+            <div class="service-card-price-badge" aria-label="Price ₹100">₹100</div>
+          </div>
+          <div class="service-card-body">
+            <div class="service-icon-wrap" aria-hidden="true">
+              <span data-lucide="droplets" class="icon-md"></span>
+            </div>
+            <h3 class="service-card-title" id="svc-scrub-title">Scrub</h3>
+            <p class="service-card-desc">Refreshing skin scrub to cleanse pores and revitalize your complexion.</p>
+            <div class="service-card-footer">
+              <span class="service-price" aria-label="Price: ₹100">₹100</span>
+              <a href="#booking" class="btn btn-outline-sm book-service-btn" data-service="Scrub" aria-label="Book a scrub appointment">Book This Service</a>
+            </div>
+          </div>
+        </article>
+
+        <!-- Tan Pack -->
+        <article class="service-card reveal-fade-up" aria-labelledby="svc-tan-title">
+          <div class="service-card-img-wrap">
+            <img
+              src="./assets/tanpack.jpeg"
+              alt="Tan pack skin treatment"
+              class="service-card-img"
+              width="600"
+              height="400"
+              loading="lazy"
+              onerror="this.onerror=null; this.parentElement.classList.add('img-fallback')"
+            />
+            <div class="service-card-price-badge" aria-label="Price ₹150">₹150</div>
+          </div>
+          <div class="service-card-body">
+            <div class="service-icon-wrap" aria-hidden="true">
+              <span data-lucide="sun" class="icon-md"></span>
+            </div>
+            <h3 class="service-card-title" id="svc-tan-title">Tan Pack</h3>
+            <p class="service-card-desc">Specialized tan pack treatment to restore and balance your skin tone.</p>
+            <div class="service-card-footer">
+              <span class="service-price" aria-label="Price: ₹150">₹150</span>
+              <a href="#booking" class="btn btn-outline-sm book-service-btn" data-service="Tan Pack" aria-label="Book a tan pack appointment">Book This Service</a>
+            </div>
+          </div>
+        </article>
+
+        <!-- Lite Facial -->
+        <article class="service-card reveal-fade-up" aria-labelledby="svc-litefacial-title">
+          <div class="service-card-img-wrap">
+            <img
+              src="./assets/lightfacial.jpeg"
+              alt="Lite facial skin care service"
+              class="service-card-img"
+              width="600"
+              height="400"
+              loading="lazy"
+              onerror="this.onerror=null; this.parentElement.classList.add('img-fallback')"
+            />
+            <div class="service-card-price-badge" aria-label="Price ₹250">₹250</div>
+          </div>
+          <div class="service-card-body">
+            <div class="service-icon-wrap" aria-hidden="true">
+              <span data-lucide="smile" class="icon-md"></span>
+            </div>
+            <h3 class="service-card-title" id="svc-litefacial-title">Lite Facial</h3>
+            <p class="service-card-desc">A basic facial treatment for cleansed, refreshed, and glowing skin.</p>
+            <div class="service-card-footer">
+              <span class="service-price" aria-label="Price: ₹250">₹250</span>
+              <a href="#booking" class="btn btn-outline-sm book-service-btn" data-service="Lite Facial" aria-label="Book a lite facial appointment">Book This Service</a>
+            </div>
+          </div>
+        </article>
+
+        <!-- Full Facial -->
+        <article class="service-card reveal-fade-up" aria-labelledby="svc-fullfacial-title">
+          <div class="service-card-img-wrap">
+            <img
+              src="./assets/fullfacial.jpeg"
+              alt="Full facial skin care treatment"
+              class="service-card-img"
+              width="600"
+              height="400"
+              loading="lazy"
+              onerror="this.onerror=null; this.parentElement.classList.add('img-fallback')"
+            />
+            <div class="service-card-price-badge" aria-label="Price ₹600 to ₹800">₹600–₹800</div>
+          </div>
+          <div class="service-card-body">
+            <div class="service-icon-wrap" aria-hidden="true">
+              <span data-lucide="gem" class="icon-md"></span>
+            </div>
+            <h3 class="service-card-title" id="svc-fullfacial-title">Full Facial</h3>
+            <p class="service-card-desc">Complete facial service with deep cleansing for ultimate skin renewal.</p>
+            <div class="service-card-footer">
+              <span class="service-price" aria-label="Price: ₹600 to ₹800">₹600–₹800</span>
+              <a href="#booking" class="btn btn-outline-sm book-service-btn" data-service="Full Facial" aria-label="Book a full facial appointment">Book This Service</a>
+            </div>
+          </div>
+        </article>
+
+      </div>
+    </div>
+  </section>
+
+  <!-- ═══════════════════════════════════════════
+       PRICE LIST SECTION
+  ═══════════════════════════════════════════ -->
+  <section class="price-section" id="price-list" aria-labelledby="price-heading">
+    <div class="section-container">
+      <div class="section-header reveal-fade-up">
+        <p class="section-eyebrow">Transparent Pricing</p>
+        <h2 class="section-title" id="price-heading">Price Catalogue</h2>
+        <p class="section-subtitle">All prices are inclusive. No hidden charges.</p>
+      </div>
+
+      <!-- Category Filter Buttons -->
+      <div class="price-filter-bar reveal-fade-up" role="group" aria-label="Filter services by category">
+        <button class="filter-btn filter-btn--active" data-filter="all" aria-pressed="true">All Services</button>
+        <button class="filter-btn" data-filter="hair" aria-pressed="false">Hair &amp; Grooming</button>
+        <button class="filter-btn" data-filter="skin" aria-pressed="false">Skin Care</button>
+      </div>
+
+      <!-- Price Cards -->
+      <div class="price-grid" id="price-grid">
+
+        <!-- Hair & Grooming -->
+        <div class="price-category-card reveal-fade-up" data-category="hair">
+          <div class="price-cat-header">
+            <span data-lucide="scissors" class="icon-md price-cat-icon" aria-hidden="true"></span>
+            <h3 class="price-cat-title">Hair &amp; Grooming</h3>
+          </div>
+          <ul class="price-list-items" role="list">
+            <li class="price-item">
+              <span class="price-item-name">Cutting</span>
+              <span class="price-item-dots" aria-hidden="true"></span>
+              <span class="price-item-amount" aria-label="₹120">₹120</span>
+            </li>
+            <li class="price-item">
+              <span class="price-item-name">Shaving</span>
+              <span class="price-item-dots" aria-hidden="true"></span>
+              <span class="price-item-amount" aria-label="₹70">₹70</span>
+            </li>
+            <li class="price-item price-item--featured">
+              <span class="price-item-name">Cutting + Shaving Combo</span>
+              <span class="price-item-dots" aria-hidden="true"></span>
+              <span class="price-item-amount" aria-label="₹170">₹170</span>
+            </li>
+          </ul>
+        </div>
+
+        <!-- Skin Care -->
+        <div class="price-category-card reveal-fade-up" data-category="skin">
+          <div class="price-cat-header">
+            <span data-lucide="sparkles" class="icon-md price-cat-icon" aria-hidden="true"></span>
+            <h3 class="price-cat-title">Skin Care</h3>
+          </div>
+          <ul class="price-list-items" role="list">
+            <li class="price-item">
+              <span class="price-item-name">Scrub</span>
+              <span class="price-item-dots" aria-hidden="true"></span>
+              <span class="price-item-amount" aria-label="₹100">₹100</span>
+            </li>
+            <li class="price-item">
+              <span class="price-item-name">Tan Pack</span>
+              <span class="price-item-dots" aria-hidden="true"></span>
+              <span class="price-item-amount" aria-label="₹150">₹150</span>
+            </li>
+            <li class="price-item">
+              <span class="price-item-name">Lite Facial</span>
+              <span class="price-item-dots" aria-hidden="true"></span>
+              <span class="price-item-amount" aria-label="₹250">₹250</span>
+            </li>
+            <li class="price-item price-item--featured">
+              <span class="price-item-name">Full Facial</span>
+              <span class="price-item-dots" aria-hidden="true"></span>
+              <span class="price-item-amount" aria-label="₹600 to ₹800">₹600–₹800</span>
+            </li>
+          </ul>
+        </div>
+
+      </div>
+
+      <!-- Price CTA -->
+      <div class="price-cta reveal-fade-up">
+        <a href="#booking" class="btn btn-gold btn-lg">
+          <span data-lucide="calendar-check" class="icon-sm" aria-hidden="true"></span>
+          Book an Appointment
+        </a>
+        <a href="#contact" class="btn btn-outline btn-lg">
+          <span data-lucide="mail" class="icon-sm" aria-hidden="true"></span>
+          Email the Salon
+        </a>
+      </div>
+    </div>
+  </section>
+
+  <!-- ═══════════════════════════════════════════
+       ABOUT / WHY CHOOSE US
+  ═══════════════════════════════════════════ -->
+  <section class="about-section" id="about" aria-labelledby="about-heading">
+    <div class="section-container">
+      <div class="about-grid">
+
+        <!-- Left Text -->
+        <div class="about-content reveal-fade-right">
+          <p class="section-eyebrow">Why Choose Us</p>
+          <h2 class="section-title" id="about-heading">Your Trusted Local Salon</h2>
+          <p class="about-desc">
+            At Sri Devi One Saloon, we believe every customer deserves a confident and polished look.
+            Located in the heart of Bommuru, we bring professional-quality grooming to your neighbourhood
+            at prices that are fair and transparent.
+          </p>
+
+          <ul class="about-features" role="list">
+            <li class="about-feature">
+              <div class="feature-icon-wrap" aria-hidden="true">
+                <span data-lucide="indian-rupee" class="icon-sm"></span>
+              </div>
+              <div class="feature-text">
+                <strong>Affordable Pricing</strong>
+                <p>Professional grooming starting at just ₹70. No hidden costs.</p>
+              </div>
+            </li>
+            <li class="about-feature">
+              <div class="feature-icon-wrap" aria-hidden="true">
+                <span data-lucide="scissors" class="icon-sm"></span>
+              </div>
+              <div class="feature-text">
+                <strong>Full Range of Services</strong>
+                <p>Haircuts, shaving, scrubs, tan packs, and facials all under one roof.</p>
+              </div>
+            </li>
+            <li class="about-feature">
+              <div class="feature-icon-wrap" aria-hidden="true">
+                <span data-lucide="map-pin" class="icon-sm"></span>
+              </div>
+              <div class="feature-text">
+                <strong>Conveniently Located</strong>
+                <p>At Bommuru Centre, near NTR Statue – easy to find and easily accessible.</p>
+              </div>
+            </li>
+            <li class="about-feature">
+              <div class="feature-icon-wrap" aria-hidden="true">
+                <span data-lucide="mail" class="icon-sm"></span>
+              </div>
+              <div class="feature-text">
+                <strong>Easy to Reach</strong>
+                <p>Email us or visit the salon for bookings, enquiries, and directions.</p>
+              </div>
+            </li>
+            <li class="about-feature">
+              <div class="feature-icon-wrap" aria-hidden="true">
+                <span data-lucide="star" class="icon-sm"></span>
+              </div>
+              <div class="feature-text">
+                <strong>5-Star Rated</strong>
+                <p>Consistently rated 5.0/5 by our customers on Google Reviews.</p>
+              </div>
+            </li>
+          </ul>
+        </div>
+
+        <!-- Right Visual -->
+        <div class="about-visual reveal-fade-left">
+          <div class="about-img-wrap">
+            <img
+              src="https://images.unsplash.com/photo-1599351431202-1e0f0137899a?auto=format&fit=crop&w=700&q=80"
+              alt="Clean and professional barbershop interior – illustrative image"
+              class="about-img"
+              width="700"
+              height="800"
+              loading="lazy"
+              onerror="this.onerror=null; this.parentElement.classList.add('img-fallback')"
+            />
+            <!-- Rating badge overlay -->
+            <div class="about-rating-badge" aria-label="Google rating 5 out of 5 from 3 reviews">
+              <div class="rating-badge-stars" aria-hidden="true">
+                <span data-lucide="star" class="star-icon star--filled"></span>
+                <span data-lucide="star" class="star-icon star--filled"></span>
+                <span data-lucide="star" class="star-icon star--filled"></span>
+                <span data-lucide="star" class="star-icon star--filled"></span>
+                <span data-lucide="star" class="star-icon star--filled"></span>
+              </div>
+              <p class="rating-badge-score">5.0 / 5</p>
+              <p class="rating-badge-source">Google Reviews</p>
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </section>
+
+
+  <section class="reviews-section" id="reviews" aria-labelledby="reviews-heading">
+    <div class="section-container">
+      <div class="section-header reveal-fade-up">
+        <p class="section-eyebrow">What Customers Say</p>
+        <h2 class="section-title" id="reviews-heading">Customer Reviews</h2>
+        <p class="section-subtitle">
+          Rated <strong>5.0/5</strong> from Google Reviews
+        </p>
+        <div class="reviews-overall-stars" aria-label="5 out of 5 stars" aria-hidden="false">
+          <span data-lucide="star" class="star-icon star--filled"></span>
+          <span data-lucide="star" class="star-icon star--filled"></span>
+          <span data-lucide="star" class="star-icon star--filled"></span>
+          <span data-lucide="star" class="star-icon star--filled"></span>
+          <span data-lucide="star" class="star-icon star--filled"></span>
+        </div>
+      </div>
+
+      <!-- Google Reviews -->
+      <div class="reviews-grid google-reviews-grid">
+
+        <!-- Review 1 -->
+        <article class="review-card reveal-fade-up" aria-label="Review from 6R5A0411 Mahesh">
+          <div class="review-card-header">
+            <div class="reviewer-avatar" aria-hidden="true">
+              <span class="avatar-initial">M</span>
+            </div>
+            <div class="reviewer-info">
+              <strong class="reviewer-name">6R5A0411 Mahesh</strong>
+              <span class="review-time">4 years ago</span>
+            </div>
+            <div class="review-source">
+              <span class="google-badge" aria-label="Google review">G</span>
+            </div>
+          </div>
+          <div class="review-stars" aria-label="5 out of 5 stars" role="img">
+            <span data-lucide="star" class="star-icon star--filled"></span>
+            <span data-lucide="star" class="star-icon star--filled"></span>
+            <span data-lucide="star" class="star-icon star--filled"></span>
+            <span data-lucide="star" class="star-icon star--filled"></span>
+            <span data-lucide="star" class="star-icon star--filled"></span>
+          </div>
+          <blockquote class="review-text">
+            <p>"Great skills...I'm fully satisfied"</p>
+          </blockquote>
+        </article>
+
+        <!-- Review 2 -->
+        <article class="review-card reveal-fade-up" aria-label="Review from Sarath Kumar">
+          <div class="review-card-header">
+            <div class="reviewer-avatar" aria-hidden="true">
+              <span class="avatar-initial">S</span>
+            </div>
+            <div class="reviewer-info">
+              <strong class="reviewer-name">Sarath Kumar</strong>
+              <span class="review-badge-local">Local Guide</span>
+              <span class="review-time">1 year ago</span>
+            </div>
+            <div class="review-source">
+              <span class="google-badge" aria-label="Google review">G</span>
+            </div>
+          </div>
+          <div class="review-stars" aria-label="5 out of 5 stars" role="img">
+            <span data-lucide="star" class="star-icon star--filled"></span>
+            <span data-lucide="star" class="star-icon star--filled"></span>
+            <span data-lucide="star" class="star-icon star--filled"></span>
+            <span data-lucide="star" class="star-icon star--filled"></span>
+            <span data-lucide="star" class="star-icon star--filled"></span>
+          </div>
+          <blockquote class="review-text">
+            <p>"Super star sir 👍🥰 …"</p>
+          </blockquote>
+        </article>
+
+        <!-- Review 3 -->
+        <article class="review-card reveal-fade-up" aria-label="Review from Mahesh Ssv">
+          <div class="review-card-header">
+            <div class="reviewer-avatar" aria-hidden="true">
+              <span class="avatar-initial">M</span>
+            </div>
+            <div class="reviewer-info">
+              <strong class="reviewer-name">Mahesh Ssv</strong>
+              <span class="review-time">6 years ago</span>
+            </div>
+            <div class="review-source">
+              <span class="google-badge" aria-label="Google review">G</span>
+            </div>
+          </div>
+          <div class="review-stars" aria-label="5 out of 5 stars" role="img">
+            <span data-lucide="star" class="star-icon star--filled"></span>
+            <span data-lucide="star" class="star-icon star--filled"></span>
+            <span data-lucide="star" class="star-icon star--filled"></span>
+            <span data-lucide="star" class="star-icon star--filled"></span>
+            <span data-lucide="star" class="star-icon star--filled"></span>
+          </div>
+          <blockquote class="review-text">
+            <p>"Super beuty parlor"</p>
+          </blockquote>
+        </article>
+
+      </div>
+
+      <!-- Submit a Review -->
+      <div class="submit-review-section reveal-fade-up" id="submit-review" aria-labelledby="submit-review-heading">
+        <div class="submit-review-header">
+          <h3 class="submit-review-heading" id="submit-review-heading">Write a Google Review</h3>
+          <p class="submit-review-note">Opens Google to submit a review for Sri Devi One Saloon.</p>
+        </div>
+        <a
+          href="https://maps.app.goo.gl/aBQx16ErauUBKbtz6"
+          class="btn btn-gold btn-lg"
+          target="_blank"
+          rel="noopener noreferrer"
+          aria-label="Open Google Maps to write a review for Sri Devi One Saloon"
+        >
+          <span data-lucide="star" class="icon-sm" aria-hidden="true"></span>
+          Open Maps
+        </a>
+      </div>
+
+    </div>
+  </section>
+
+  <!-- ═══════════════════════════════════════════
+       BOOKING SECTION
+  ═══════════════════════════════════════════ -->
+  <section class="booking-section" id="booking" aria-labelledby="booking-heading">
+    <div class="section-container">
+      <div class="booking-grid">
+
+        <!-- Left Info -->
+        <div class="booking-info reveal-fade-right">
+          <p class="section-eyebrow">Book Your Visit</p>
+          <h2 class="section-title" id="booking-heading">Make an Appointment</h2>
+          <p class="booking-desc">
+            Fill in the form and your booking request will be saved and confirmed by email.
+            We will notify you automatically with reminders and follow-ups.
+          </p>
+
+          <div class="booking-contact-options">
+            <a href="#contact" class="booking-contact-item" aria-label="Email Sri Devi One Saloon">
+              <span data-lucide="mail" class="icon-md" aria-hidden="true"></span>
+              <div>
+                <strong>Email Us</strong>
+                <span>pavankoneti85@gmail.com</span>
+              </div>
+            </a>
+            <a href="https://maps.app.goo.gl/aBQx16ErauUBKbtz6" class="booking-contact-item" target="_blank" rel="noopener noreferrer" aria-label="Get directions to Sri Devi One Saloon">
+              <span data-lucide="navigation" class="icon-md" aria-hidden="true"></span>
+              <div>
+                <strong>Visit Us</strong>
+                <span>Bommuru Centre, Near NTR Statue</span>
+              </div>
+            </a>
+          </div>
+        </div>
+
+        <!-- Right Form -->
+        <div class="booking-form-wrap reveal-fade-left">
+          <form class="booking-form" id="booking-form" novalidate aria-label="Appointment booking form">
+
+            <div class="booking-form-grid">
+              <!-- Name -->
+              <div class="form-group">
+                <label for="booking-name" class="form-label">Full Name <span class="required-mark" aria-hidden="true">*</span></label>
+                <input
+                  type="text"
+                  id="booking-name"
+                  name="booking-name"
+                  class="form-control"
+                  placeholder="Your name"
+                  required
+                  autocomplete="name"
+                  aria-required="true"
+                  aria-describedby="booking-name-error"
+                />
+                <span class="field-error" id="booking-name-error" role="alert" aria-live="polite"></span>
+              </div>
+
+              <!-- Phone -->
+              <div class="form-group">
+                <label for="booking-phone" class="form-label">Phone Number <span class="required-mark" aria-hidden="true">*</span></label>
+                <input
+                  type="tel"
+                  id="booking-phone"
+                  name="booking-phone"
+                  class="form-control"
+                  placeholder="10-digit mobile number"
+                  required
+                  autocomplete="tel"
+                  inputmode="tel"
+                  aria-required="true"
+                  aria-describedby="booking-phone-error"
+                />
+                <span class="field-error" id="booking-phone-error" role="alert" aria-live="polite"></span>
+              </div>
+
+              <!-- Email -->
+              <div class="form-group">
+                <label for="booking-email" class="form-label">Email Address <span class="required-mark" aria-hidden="true">*</span></label>
+                <input
+                  type="email"
+                  id="booking-email"
+                  name="booking-email"
+                  class="form-control"
+                  placeholder="your@email.com"
+                  required
+                  autocomplete="email"
+                  inputmode="email"
+                  aria-required="true"
+                  aria-describedby="booking-email-error"
+                />
+                <span class="field-error" id="booking-email-error" role="alert" aria-live="polite"></span>
+              </div>
+
+              <!-- Service -->
+              <div class="form-group">
+                <label for="booking-service" class="form-label">Service <span class="required-mark" aria-hidden="true">*</span></label>
+                <select id="booking-service" name="booking-service" class="form-control form-select" required aria-required="true" aria-describedby="booking-service-error">
+                  <option value="" disabled selected>Select a service…</option>
+                  <option value="Haircut (₹120)">Haircut — ₹120</option>
+                  <option value="Shaving (₹70)">Shaving — ₹70</option>
+                  <option value="Haircut + Shaving Combo (₹170)">Haircut + Shaving Combo — ₹170</option>
+                  <option value="Scrub (₹100)">Scrub — ₹100</option>
+                  <option value="Tan Pack (₹150)">Tan Pack — ₹150</option>
+                  <option value="Lite Facial (₹250)">Lite Facial — ₹250</option>
+                  <option value="Full Facial (₹600–₹800)">Full Facial — ₹600–₹800</option>
+                </select>
+                <span class="field-error" id="booking-service-error" role="alert" aria-live="polite"></span>
+              </div>
+
+              <!-- Date -->
+              <div class="form-group">
+                <label for="booking-date" class="form-label">Preferred Date <span class="required-mark" aria-hidden="true">*</span></label>
+                <input
+                  type="date"
+                  id="booking-date"
+                  name="booking-date"
+                  class="form-control"
+                  required
+                  aria-required="true"
+                  aria-describedby="booking-date-error"
+                />
+                <span class="field-error" id="booking-date-error" role="alert" aria-live="polite"></span>
+              </div>
+
+              <!-- Time -->
+              <div class="form-group">
+                <label for="booking-time" class="form-label">Preferred Time <span class="required-mark" aria-hidden="true">*</span></label>
+                <input
+                  type="time"
+                  id="booking-time"
+                  name="booking-time"
+                  class="form-control"
+                  required
+                  aria-required="true"
+                  aria-describedby="booking-time-error"
+                />
+                <span class="field-error" id="booking-time-error" role="alert" aria-live="polite"></span>
+              </div>
+
+              <!-- Message -->
+              <div class="form-group form-group--full">
+                <label for="booking-message" class="form-label">Additional Message (Optional)</label>
+                <textarea
+                  id="booking-message"
+                  name="booking-message"
+                  class="form-control"
+                  rows="3"
+                  placeholder="Any specific request or note…"
+                ></textarea>
+              </div>
+            </div>
+
+            <!-- Booking Summary -->
+            <div class="booking-summary" id="booking-summary" hidden aria-live="polite">
+              <h4 class="booking-summary-title">
+                <span data-lucide="check-circle" class="icon-sm" aria-hidden="true"></span>
+                Booking Summary
+              </h4>
+              <div class="summary-details" id="summary-details"></div>
+            </div>
+
+            <!-- Actions -->
+            <div class="booking-form-actions">
+              <button type="button" class="btn btn-outline btn-lg" id="preview-booking-btn">
+                <span data-lucide="eye" class="icon-sm" aria-hidden="true"></span>
+                Preview Booking
+              </button>
+              <button type="submit" class="btn btn-gold btn-lg" id="send-booking-btn">
+                <span data-lucide="calendar-check" class="icon-sm" aria-hidden="true"></span>
+                Book Appointment
+              </button>
+            </div>
+
+            <div class="form-status" id="booking-status" role="alert" aria-live="polite"></div>
+
+            <p class="booking-disclaimer">
+              <span data-lucide="info" class="icon-xs" aria-hidden="true"></span>
+              Your booking is saved securely and a confirmation email is sent immediately after booking.
+            </p>
+          </form>
+        </div>
+
+      </div>
+    </div>
+  </section>
+
+  <!-- ═══════════════════════════════════════════
+       LOCATION SECTION
+  ═══════════════════════════════════════════ -->
+  <section class="location-section" id="location" aria-labelledby="location-heading">
+    <div class="section-container">
+      <div class="section-header reveal-fade-up">
+        <p class="section-eyebrow">Find Us</p>
+        <h2 class="section-title" id="location-heading">Our Location</h2>
+        <p class="section-subtitle">Conveniently located in the heart of Bommuru.</p>
+      </div>
+
+      <div class="location-grid">
+        <!-- Contact Card -->
+        <div class="location-info-card reveal-fade-right">
+          <div class="location-logo-wrap">
+            <img src="assets/logo.png" alt="Sri Devi One Saloon" class="location-logo" width="80" height="80" />
+          </div>
+          <h3 class="location-name">Sri Devi One Saloon</h3>
+          <p class="location-name-te" lang="te">Sri Devi One Saloon</p>
+
+          <address class="location-address">
+            <p>
+              <span data-lucide="map-pin" class="icon-sm" aria-hidden="true"></span>
+              Main Centre, 102-4-520, Bommuru, Kotta Bommuru,<br />
+              Andhra Pradesh 533124, India.
+            </p>
+            <p class="location-landmark">
+              <span data-lucide="navigation" class="icon-sm" aria-hidden="true"></span>
+              Near NTR Statue, Rajuvolu Road, Bommuru Centre
+            </p>
+          </address>
+
+          <div class="location-actions">
+            <a href="mailto:pavankoneti85@gmail.com" class="btn btn-gold" aria-label="Email Sri Devi One Saloon">
+              <span data-lucide="mail" class="icon-sm" aria-hidden="true"></span>
+              Email Us
+            </a>
+            <a
+              href="https://maps.app.goo.gl/aBQx16ErauUBKbtz6"
+              class="btn btn-outline"
+              target="_blank"
+              rel="noopener noreferrer"
+              aria-label="Get directions to Sri Devi One Saloon on Google Maps"
+            >
+              <span data-lucide="map" class="icon-sm" aria-hidden="true"></span>
+              Get Directions
+            </a>
+          </div>
+        </div>
+
+        <!-- Map embed -->
+        <div class="location-map-wrap reveal-fade-left">
+          <div class="map-container">
+            <iframe
+              src="https://maps.google.com/maps?q=Bommuru+Centre+Near+NTR+Statue+Rajuvolu+Road+Kotta+Bommuru+Andhra+Pradesh+533124&output=embed&z=15"
+              title="Sri Devi One Saloon location on Google Maps"
+              class="map-iframe"
+              loading="lazy"
+              referrerpolicy="no-referrer-when-downgrade"
+              aria-label="Map showing Sri Devi One Saloon at Bommuru Centre"
+              width="100%"
+              height="400"
+            ></iframe>
+            <!-- Fallback if iframe doesn't load -->
+            <div class="map-fallback" hidden>
+              <span data-lucide="map" class="icon-xl" aria-hidden="true"></span>
+              <p>Map could not be loaded.</p>
+              <a href="https://maps.app.goo.gl/aBQx16ErauUBKbtz6" class="btn btn-gold" target="_blank" rel="noopener noreferrer">
+                Open in Google Maps
+              </a>
+            </div>
+          </div>
+          <div class="map-directions-cta">
+            <a href="https://maps.app.goo.gl/aBQx16ErauUBKbtz6" class="btn btn-outline" target="_blank" rel="noopener noreferrer" aria-label="Open directions to Sri Devi One Saloon in Google Maps">
+              <span data-lucide="external-link" class="icon-sm" aria-hidden="true"></span>
+              Open in Google Maps
+            </a>
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </section>
+
+  <!-- ═══════════════════════════════════════════
+       CONTACT US SECTION
+  ═══════════════════════════════════════════ -->
+  <section class="contact-section" id="contact" aria-labelledby="contact-heading">
+    <div class="contact-hero-banner">
+      <div class="contact-hero-deco" aria-hidden="true">
+        <div class="contact-deco-circle-1"></div>
+        <div class="contact-deco-circle-2"></div>
+      </div>
+      <div class="section-container">
+        <div class="contact-hero-content reveal-fade-up">
+          <p class="section-eyebrow">Contact Us</p>
+          <h2 class="section-title" id="contact-heading">Let's Get in Touch</h2>
+          <p class="section-subtitle">
+            Have a question about our services, pricing, or appointments?<br />
+            We are always happy to help by email or in person at the salon.
+          </p>
+        </div>
+      </div>
+    </div>
+
+    <div class="section-container contact-body">
+
+      <!-- Contact Info Cards -->
+      <div class="contact-cards-grid reveal-fade-up">
+
+        <div class="contact-card">
+          <div class="contact-card-icon" aria-hidden="true">
+            <span data-lucide="mail" class="icon-lg"></span>
+          </div>
+          <h3 class="contact-card-title">Email</h3>
+          <p class="contact-card-detail">pavankoneti85@gmail.com</p>
+          <div class="contact-card-actions">
+            <a href="mailto:pavankoneti85@gmail.com" class="btn btn-gold" aria-label="Email Sri Devi One Saloon">
+              <span data-lucide="mail" class="icon-xs" aria-hidden="true"></span> Email Us
+            </a>
+          </div>
+        </div>
+
+        <div class="contact-card">
+          <div class="contact-card-icon" aria-hidden="true">
+            <span data-lucide="scissors" class="icon-lg"></span>
+          </div>
+          <h3 class="contact-card-title">Appointments</h3>
+          <p class="contact-card-detail">Book online and receive email confirmations.</p>
+          <div class="contact-card-actions">
+            <a href="#booking" class="btn btn-outline" aria-label="Book an appointment at Sri Devi One Saloon">
+              <span data-lucide="calendar-check" class="icon-xs" aria-hidden="true"></span> Book Now
+            </a>
+          </div>
+        </div>
+
+        <div class="contact-card">
+          <div class="contact-card-icon" aria-hidden="true">
+            <span data-lucide="map-pin" class="icon-lg"></span>
+          </div>
+          <h3 class="contact-card-title">Salon Location</h3>
+          <p class="contact-card-detail">Bommuru Centre, Near NTR Statue, Rajuvolu Road, Kotta Bommuru, AP 533124</p>
+          <div class="contact-card-actions">
+            <a href="https://maps.app.goo.gl/aBQx16ErauUBKbtz6" class="btn btn-gold" target="_blank" rel="noopener noreferrer" aria-label="Get directions to Sri Devi One Saloon">
+              <span data-lucide="navigation" class="icon-xs" aria-hidden="true"></span> Get Directions
+            </a>
+          </div>
+        </div>
+
+      </div>
+
+      <!-- Contact Form -->
+      <div class="contact-form-wrap reveal-fade-up">
+        <h3 class="contact-form-title">Send Us a Message</h3>
+        <p class="contact-form-intro">Fill in the form below and we will reply via email as soon as possible.</p>
+
+        <form class="contact-form" id="contact-form" novalidate aria-label="Contact form for Sri Devi One Saloon">
+          <div class="contact-form-grid">
+
+            <!-- Name -->
+            <div class="form-group">
+              <label for="contact-name" class="form-label">Full Name <span class="required-mark" aria-hidden="true">*</span></label>
+              <input
+                type="text"
+                id="contact-name"
+                name="contact-name"
+                class="form-control"
+                placeholder="Your full name"
+                required
+                autocomplete="name"
+                aria-required="true"
+                aria-describedby="contact-name-error"
+              />
+              <span class="field-error" id="contact-name-error" role="alert" aria-live="polite"></span>
+            </div>
+
+            <!-- Email -->
+            <div class="form-group">
+              <label for="contact-email" class="form-label">Email Address <span class="required-mark" aria-hidden="true">*</span></label>
+              <input
+                type="email"
+                id="contact-email"
+                name="contact-email"
+                class="form-control"
+                placeholder="your@email.com"
+                required
+                autocomplete="email"
+                aria-required="true"
+                aria-describedby="contact-email-error"
+              />
+              <span class="field-error" id="contact-email-error" role="alert" aria-live="polite"></span>
+            </div>
+
+            <!-- Subject -->
+            <div class="form-group">
+              <label for="contact-subject" class="form-label">Subject <span class="required-mark" aria-hidden="true">*</span></label>
+              <input
+                type="text"
+                id="contact-subject"
+                name="contact-subject"
+                class="form-control"
+                placeholder="e.g., Appointment enquiry, Pricing, etc."
+                required
+                aria-required="true"
+                aria-describedby="contact-subject-error"
+              />
+              <span class="field-error" id="contact-subject-error" role="alert" aria-live="polite"></span>
+            </div>
+
+            <!-- Message -->
+            <div class="form-group form-group--full">
+              <label for="contact-message" class="form-label">Message <span class="required-mark" aria-hidden="true">*</span></label>
+              <textarea
+                id="contact-message"
+                name="contact-message"
+                class="form-control"
+                rows="5"
+                placeholder="Write your message here…"
+                required
+                aria-required="true"
+                aria-describedby="contact-message-error"
+              ></textarea>
+              <span class="field-error" id="contact-message-error" role="alert" aria-live="polite"></span>
+            </div>
+
+          </div>
+
+          <!-- Message Summary -->
+          <div class="contact-summary" id="contact-summary" hidden aria-live="polite">
+            <h4 class="booking-summary-title">
+              <span data-lucide="check-circle" class="icon-sm" aria-hidden="true"></span>
+              Message Summary
+            </h4>
+            <div class="summary-details" id="contact-summary-details"></div>
+          </div>
+
+          <div class="contact-form-actions">
+            <button type="button" class="btn btn-outline btn-lg" id="preview-contact-btn">
+              <span data-lucide="eye" class="icon-sm" aria-hidden="true"></span>
+              Preview Message
+            </button>
+            <button type="submit" class="btn btn-gold btn-lg">
+              <span data-lucide="mail" class="icon-sm" aria-hidden="true"></span>
+              Send Message
+            </button>
+          </div>
+
+          <div class="form-status" id="contact-status" role="alert" aria-live="polite"></div>
+
+          <p class="booking-disclaimer">
+            <span data-lucide="info" class="icon-xs" aria-hidden="true"></span>
+            We use secure email delivery for all salon enquiries and appointment updates.
+          </p>
+        </form>
+      </div>
+
+    </div>
+  </section>
+
+  <!-- ═══════════════════════════════════════════
+       FOOTER
+  ═══════════════════════════════════════════ -->
+  <footer class="site-footer" role="contentinfo">
+    <div class="footer-top">
+      <div class="footer-container">
+
+        <!-- Brand Col -->
+        <div class="footer-col footer-brand-col">
+          <div class="footer-logo-wrap">
+            <img src="assets/logo.png" alt="Sri Devi One Saloon logo" class="footer-logo" width="64" height="64" />
+          </div>
+          <div class="footer-brand-text">
+            <strong class="footer-brand-en">Sri Devi One Saloon</strong>
+            <span class="footer-brand-te" lang="te">Sri Devi One Saloon</span>
+          </div>
+          <p class="footer-desc">
+            Professional grooming services in Bommuru, Andhra Pradesh. Haircuts, shaving, facials, and more.
+          </p>
+        </div>
+
+        <!-- Quick Links -->
+        <div class="footer-col">
+          <h4 class="footer-col-title">Quick Links</h4>
+          <ul class="footer-links" role="list">
+            <li><a href="#home" class="footer-link">Home</a></li>
+            <li><a href="#services" class="footer-link">Services</a></li>
+            <li><a href="#price-list" class="footer-link">Price List</a></li>
+            <li><a href="#about" class="footer-link">About</a></li>
+            <li><a href="#reviews" class="footer-link">Reviews</a></li>
+            <li><a href="#booking" class="footer-link">Book Appointment</a></li>
+            <li><a href="#contact" class="footer-link">Contact</a></li>
+          </ul>
+        </div>
+
+        <!-- Contact Info -->
+        <div class="footer-col">
+          <h4 class="footer-col-title">Contact</h4>
+          <address class="footer-address">
+            <p>
+              <span data-lucide="map-pin" class="icon-xs" aria-hidden="true"></span>
+              Bommuru Centre, Near NTR Statue,<br />Rajuvolu Road, Kotta Bommuru,<br />Andhra Pradesh 533124
+            </p>
+            <p>
+              <span data-lucide="mail" class="icon-xs" aria-hidden="true"></span>
+              <a href="mailto:pavankoneti85@gmail.com" class="footer-link" aria-label="Email Sri Devi One Saloon">pavankoneti85@gmail.com</a>
+            </p>
+          </address>
+          <div class="footer-map-link">
+            <a
+              href="https://maps.app.goo.gl/aBQx16ErauUBKbtz6"
+              class="btn btn-outline btn-sm"
+              target="_blank"
+              rel="noopener noreferrer"
+              aria-label="Get directions to Sri Devi One Saloon on Google Maps"
+            >
+              <span data-lucide="map" class="icon-xs" aria-hidden="true"></span>
+              Get Directions
+            </a>
+          </div>
+        </div>
+
+      </div>
+    </div>
+
+    <div class="footer-bottom">
+      <div class="footer-container">
+        <p class="footer-copy">
+          &copy; <span id="copyright-year"></span> Sri Devi One Saloon. All rights reserved.
+        </p>
+        <p class="footer-note">Bommuru, Kotta Bommuru, Andhra Pradesh, India.</p>
+      </div>
+    </div>
+  </footer>
+
+  <!-- Back to Top -->
+  <button class="back-to-top" id="back-to-top" aria-label="Scroll back to top of page" hidden>
+    <span data-lucide="chevron-up" class="icon-sm" aria-hidden="true"></span>
+  </button>
+
+  <!-- Script -->
+  <script src="js/script.js?v=2.3"></script>
+</body>
+</html>
