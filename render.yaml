@@ -1,0 +1,17 @@
+services:
+  - type: web
+    name: sridevionesaloon
+    runtime: python
+    buildCommand: pip install -r requirements.txt
+    startCommand: gunicorn app:app
+    envVars:
+      - key: RESEND_API_KEY
+        sync: false
+      - key: EMAIL_SENDER
+        value: Sri Devi One Saloon <onboarding@resend.dev>
+      - key: SALON_EMAIL
+        value: chakravarthy.atipamula@gmail.com
+      - key: SALON_NAME
+        value: Sri Devi One Saloon
+      - key: SALON_TIMEZONE
+        value: Asia/Kolkata

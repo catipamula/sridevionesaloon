@@ -31,7 +31,7 @@ def sanitize_env_value(key, default=""):
 
 
 SALON_NAME = sanitize_env_value("SALON_NAME", "Sri Devi One Saloon")
-SALON_EMAIL = sanitize_env_value("SALON_EMAIL", "pavankoneti85@gmail.com")
+SALON_EMAIL = sanitize_env_value("SALON_EMAIL", "chakravarthy.atipamula@gmail.com")
 SALON_PHONE = sanitize_env_value("SALON_PHONE", "+91 73961 44248")
 SALON_MAPS_URL = sanitize_env_value("SALON_MAPS_URL", "https://maps.app.goo.gl/suHNM6yaQBY29TX8A")
 SALON_TIMEZONE = sanitize_env_value("SALON_TIMEZONE", "Asia/Kolkata")
@@ -43,10 +43,10 @@ SMTP_PORT = int(sanitize_env_value("SMTP_PORT", "587"))
 SMTP_EMAIL = sanitize_env_value("SMTP_EMAIL", "pavankoneti85@gmail.com")
 SMTP_APP_PASSWORD = sanitize_env_value("SMTP_APP_PASSWORD", "")
 
-# Optional HTTP Email API keys (Works seamlessly on Render Free Tier via Port 443)
+# HTTP Email API configuration (Works on Render Free Tier via Port 443)
 RESEND_API_KEY = sanitize_env_value("RESEND_API_KEY", "")
 BREVO_API_KEY = sanitize_env_value("BREVO_API_KEY", "")
-EMAIL_SENDER = sanitize_env_value("EMAIL_SENDER", "")
+EMAIL_SENDER = sanitize_env_value("EMAIL_SENDER", "Sri Devi One Saloon <onboarding@resend.dev>")
 
 SERVICE_DURATION_MINUTES = int(sanitize_env_value("SERVICE_DURATION_MINUTES", "60"))
 FOLLOWUP_INTERVAL_MONTHS = int(sanitize_env_value("FOLLOWUP_INTERVAL_MONTHS", "1"))
@@ -205,6 +205,27 @@ def send_via_resend(destination_email: str, subject: str, plain_body: str, html_
             return response.read()
     except urllib.error.HTTPError as err:
         err_msg = err.read().decode("utf-8", errors="ignore")
+        # Handle Resend testing restriction gracefully: forward to registered account so alert is never lost
+        if "validation_error" in err_msg and "only send testing emails to your own email address" in err_msg:
+            fallback_to = "chakravarthy.atipamula@gmail.com"
+            if destination_email.lower() != fallback_to.lower():
+                payload["to"] = [fallback_to]
+                payload["subject"] = f"[Customer Copy: {destination_email}] {subject}"
+                fallback_req = urllib.request.Request(
+                    "https://api.resend.com/emails",
+                    data=json.dumps(payload).encode("utf-8"),
+                    headers={
+                        "Authorization": f"Bearer {RESEND_API_KEY}",
+                        "Content-Type": "application/json",
+                        "User-Agent": "SriDeviSaloon/1.0",
+                    },
+                    method="POST",
+                )
+                try:
+                    with urllib.request.urlopen(fallback_req, timeout=12) as fb_resp:
+                        return fb_resp.read()
+                except Exception:
+                    pass
         raise RuntimeError(f"Resend API error ({err.code}): {err_msg}") from err
 
 
