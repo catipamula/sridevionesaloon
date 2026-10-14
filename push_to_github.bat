@@ -26,9 +26,9 @@ if errorlevel 1 (
     exit /b 1
 )
 
-:: Pull remote changes first to prevent merge conflicts
-echo [1/4] Pulling latest changes from GitHub (with rebase)...
-git pull --rebase origin main
+:: Pull remote changes first with autostash to avoid merge conflicts
+echo [1/4] Pulling latest changes from GitHub...
+git pull --rebase --autostash origin main
 if errorlevel 1 (
     echo.
     echo [WARNING] Git pull with rebase encountered a conflict or error.

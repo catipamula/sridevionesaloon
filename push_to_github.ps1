@@ -22,9 +22,9 @@ if (-not (Test-Path "$RepoDir\.git")) {
 }
 Set-Location $RepoDir
 
-# Pull latest changes using rebase to avoid unnecessary merge conflicts
+# Pull latest changes using rebase and autostash to avoid unnecessary merge conflicts
 Write-Host "[1/4] Pulling latest remote changes..." -ForegroundColor Yellow
-git pull --rebase origin main
+git pull --rebase --autostash origin main
 
 # Stage changes
 Write-Host "[2/4] Staging all files..." -ForegroundColor Yellow
