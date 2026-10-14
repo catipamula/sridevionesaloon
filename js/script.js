@@ -9,7 +9,6 @@
 /* ═══════════════════════════════════════════════
    CONSTANTS
 ═══════════════════════════════════════════════ */
-<<<<<<< HEAD
 const SALON_EMAIL = 'pavankoneti85@gmail.com';
 const MAPS_URL = 'https://maps.app.goo.gl/aBQx16ErauUBKbtz6';
 
@@ -22,12 +21,6 @@ const WELCOME_MESSAGES = [
   "Tailored Cuts, Sharp Beards & Rejuvenating Facials at Sri Devi One Saloon."
 ];
 
-=======
-const WHATSAPP_SALON = '917396144248';   // salon bookings
-const WHATSAPP_ENQUIRY = '916301052228'; // general enquiries / contact form
-const MAPS_URL = 'https://maps.app.goo.gl/aBQx16ErauUBKbtz6';
-
->>>>>>> 8cadb3377467d427079034c5e6fa00411f78e766
 /* ═══════════════════════════════════════════════
    UTILITY HELPERS
 ═══════════════════════════════════════════════ */
@@ -58,7 +51,6 @@ function todayString() {
 }
 
 /**
-<<<<<<< HEAD
  * Format 24-hour time string (e.g. '14:30', '09:00', '00:00', '12:00') into 12-hour AM/PM format.
  */
 function formatTime12Hour(timeStr) {
@@ -94,14 +86,6 @@ function formatDateReadable(dateStr) {
   } catch (e) {
     return dateStr;
   }
-=======
- * Validate a 10-digit Indian mobile number.
- * Accepts optional +91 / 91 prefix and spaces.
- */
-function isValidIndianPhone(value) {
-  const cleaned = value.replace(/[\s\-().]/g, '');
-  return /^(?:\+91|91)?[6-9]\d{9}$/.test(cleaned);
->>>>>>> 8cadb3377467d427079034c5e6fa00411f78e766
 }
 
 /**
@@ -112,7 +96,6 @@ function isValidEmail(value) {
 }
 
 /**
-<<<<<<< HEAD
  * Validate a phone number (at least 10 digits).
  */
 function isValidIndianPhone(value) {
@@ -121,8 +104,6 @@ function isValidIndianPhone(value) {
 }
 
 /**
-=======
->>>>>>> 8cadb3377467d427079034c5e6fa00411f78e766
  * Show a field error message.
  */
 function showError(errorEl, message) {
@@ -176,7 +157,6 @@ function initCopyrightYear() {
 ═══════════════════════════════════════════════ */
 
 /* ═══════════════════════════════════════════════
-<<<<<<< HEAD
    3b. WELCOME POPUP MODAL (Random on load/refresh, 4-side spacing)
 ═══════════════════════════════════════════════ */
 function initWelcomeBanner() {
@@ -241,8 +221,6 @@ function initWelcomeBanner() {
 }
 
 /* ═══════════════════════════════════════════════
-=======
->>>>>>> 8cadb3377467d427079034c5e6fa00411f78e766
    4. STICKY NAVIGATION (transparent → solid on scroll)
 ═══════════════════════════════════════════════ */
 function initStickyNav() {
@@ -512,10 +490,7 @@ function initBookingForm() {
 
   const nameEl    = qs('#booking-name', form);
   const phoneEl   = qs('#booking-phone', form);
-<<<<<<< HEAD
   const emailEl   = qs('#booking-email', form);
-=======
->>>>>>> 8cadb3377467d427079034c5e6fa00411f78e766
   const serviceEl = qs('#booking-service', form);
   const dateEl    = qs('#booking-date', form);
   const timeEl    = qs('#booking-time', form);
@@ -523,65 +498,37 @@ function initBookingForm() {
 
   const nameErr    = qs('#booking-name-error');
   const phoneErr   = qs('#booking-phone-error');
-<<<<<<< HEAD
   const emailErr   = qs('#booking-email-error');
   const serviceErr = qs('#booking-service-error');
   const dateErr    = qs('#booking-date-error');
   const timeErr    = qs('#booking-time-error');
   const statusEl   = qs('#booking-status');
-=======
-  const serviceErr = qs('#booking-service-error');
-  const dateErr    = qs('#booking-date-error');
-  const timeErr    = qs('#booking-time-error');
->>>>>>> 8cadb3377467d427079034c5e6fa00411f78e766
 
   const summaryEl        = qs('#booking-summary');
   const summaryDetails   = qs('#summary-details', summaryEl);
   const previewBtn       = qs('#preview-booking-btn');
 
-<<<<<<< HEAD
   if (dateEl) dateEl.min = todayString();
 
-=======
-  // Set minimum date to today
-  if (dateEl) dateEl.min = todayString();
-
-  // ── Preview
->>>>>>> 8cadb3377467d427079034c5e6fa00411f78e766
   if (previewBtn) {
     previewBtn.addEventListener('click', () => {
       if (!validateBookingForm()) return;
       buildSummary(summaryDetails, {
         'Name':    nameEl.value.trim(),
-<<<<<<< HEAD
         'Phone':   phoneEl ? phoneEl.value.trim() : '',
         'Email':   emailEl.value.trim(),
         'Service': serviceEl.value,
         'Date':    formatDateReadable(dateEl.value),
         'Time':    formatTime12Hour(timeEl.value),
-=======
-        'Phone':   phoneEl.value.trim(),
-        'Service': serviceEl.value,
-        'Date':    dateEl.value,
-        'Time':    timeEl.value,
->>>>>>> 8cadb3377467d427079034c5e6fa00411f78e766
         'Note':    msgEl ? msgEl.value.trim() : ''
       });
       if (summaryEl) summaryEl.removeAttribute('hidden');
     });
   }
 
-<<<<<<< HEAD
   function validateBookingForm() {
     let valid = true;
 
-=======
-  // ── Validate
-  function validateBookingForm() {
-    let valid = true;
-
-    // Name
->>>>>>> 8cadb3377467d427079034c5e6fa00411f78e766
     if (!nameEl || !nameEl.value.trim()) {
       setInvalid(nameEl, nameErr, 'Please enter your name.');
       valid = false;
@@ -589,25 +536,16 @@ function initBookingForm() {
       setValid(nameEl, nameErr);
     }
 
-<<<<<<< HEAD
-=======
-    // Phone
->>>>>>> 8cadb3377467d427079034c5e6fa00411f78e766
     if (!phoneEl || !phoneEl.value.trim()) {
       setInvalid(phoneEl, phoneErr, 'Please enter your phone number.');
       valid = false;
     } else if (!isValidIndianPhone(phoneEl.value)) {
-<<<<<<< HEAD
       setInvalid(phoneEl, phoneErr, 'Please enter a valid 10-digit mobile number.');
-=======
-      setInvalid(phoneEl, phoneErr, 'Enter a valid 10-digit Indian mobile number.');
->>>>>>> 8cadb3377467d427079034c5e6fa00411f78e766
       valid = false;
     } else {
       setValid(phoneEl, phoneErr);
     }
 
-<<<<<<< HEAD
     if (!emailEl || !emailEl.value.trim()) {
       setInvalid(emailEl, emailErr, 'Please enter your email address.');
       valid = false;
@@ -618,9 +556,6 @@ function initBookingForm() {
       setValid(emailEl, emailErr);
     }
 
-=======
-    // Service
->>>>>>> 8cadb3377467d427079034c5e6fa00411f78e766
     if (!serviceEl || !serviceEl.value) {
       setInvalid(serviceEl, serviceErr, 'Please select a service.');
       valid = false;
@@ -628,10 +563,6 @@ function initBookingForm() {
       setValid(serviceEl, serviceErr);
     }
 
-<<<<<<< HEAD
-=======
-    // Date
->>>>>>> 8cadb3377467d427079034c5e6fa00411f78e766
     if (!dateEl || !dateEl.value) {
       setInvalid(dateEl, dateErr, 'Please select a preferred date.');
       valid = false;
@@ -642,10 +573,6 @@ function initBookingForm() {
       setValid(dateEl, dateErr);
     }
 
-<<<<<<< HEAD
-=======
-    // Time
->>>>>>> 8cadb3377467d427079034c5e6fa00411f78e766
     if (!timeEl || !timeEl.value) {
       setInvalid(timeEl, timeErr, 'Please select a preferred time.');
       valid = false;
@@ -656,7 +583,6 @@ function initBookingForm() {
     return valid;
   }
 
-<<<<<<< HEAD
   form.addEventListener('submit', async e => {
     e.preventDefault();
     if (!validateBookingForm()) return;
@@ -721,45 +647,6 @@ function initBookingForm() {
     };
     el.addEventListener('input', clearFeedback);
     el.addEventListener('change', clearFeedback);
-=======
-  // ── Submit → WhatsApp
-  form.addEventListener('submit', e => {
-    e.preventDefault();
-    if (!validateBookingForm()) return;
-
-    const name    = nameEl.value.trim();
-    const phone   = phoneEl.value.trim();
-    const service = serviceEl.value;
-    const date    = dateEl.value;
-    const time    = timeEl.value;
-    const note    = msgEl ? msgEl.value.trim() : '';
-
-    const lines = [
-      '🗓 *Appointment Request – Sri Devi One Saloon*',
-      '',
-      `*Name:* ${name}`,
-      `*Phone:* ${phone}`,
-      `*Service:* ${service}`,
-      `*Date:* ${date}`,
-      `*Time:* ${time}`,
-      note ? `*Note:* ${note}` : '',
-      '',
-      '_This request was sent from the salon website. Please confirm the appointment._'
-    ].filter(line => line !== null);
-
-    const message = encodeURIComponent(lines.join('\n'));
-    window.open(`https://wa.me/${WHATSAPP_SALON}?text=${message}`, '_blank', 'noopener,noreferrer');
-  });
-
-  // Clear errors on input
-  [nameEl, phoneEl, serviceEl, dateEl, timeEl].forEach(el => {
-    if (!el) return;
-    el.addEventListener('input', () => {
-      const errorId = el.getAttribute('aria-describedby');
-      if (errorId) clearError(qs(`#${errorId}`));
-      el.removeAttribute('aria-invalid');
-    });
->>>>>>> 8cadb3377467d427079034c5e6fa00411f78e766
   });
 }
 
@@ -933,11 +820,7 @@ function initReviewForm() {
     return valid;
   }
 
-<<<<<<< HEAD
   // ── Submit via email
-=======
-  // ── Submit → WhatsApp
->>>>>>> 8cadb3377467d427079034c5e6fa00411f78e766
   form.addEventListener('submit', e => {
     e.preventDefault();
     if (!validateReviewForm()) return;
@@ -958,12 +841,8 @@ function initReviewForm() {
     ];
 
     const message = encodeURIComponent(lines.join('\n'));
-<<<<<<< HEAD
     const reviewMail = `mailto:${SALON_EMAIL}?subject=${encodeURIComponent('Website review submission')}&body=${message}`;
     window.open(reviewMail, '_blank', 'noopener,noreferrer');
-=======
-    window.open(`https://wa.me/${WHATSAPP_SALON}?text=${message}`, '_blank', 'noopener,noreferrer');
->>>>>>> 8cadb3377467d427079034c5e6fa00411f78e766
   });
 
   // Clear errors on interaction
@@ -985,46 +864,26 @@ function initContactForm() {
   if (!form) return;
 
   const nameEl    = qs('#contact-name', form);
-<<<<<<< HEAD
-=======
-  const phoneEl   = qs('#contact-phone', form);
->>>>>>> 8cadb3377467d427079034c5e6fa00411f78e766
   const emailEl   = qs('#contact-email', form);
   const subjectEl = qs('#contact-subject', form);
   const msgEl     = qs('#contact-message', form);
 
   const nameErr    = qs('#contact-name-error');
-<<<<<<< HEAD
   const emailErr   = qs('#contact-email-error');
   const subjectErr = qs('#contact-subject-error');
   const msgErr     = qs('#contact-message-error');
   const statusEl   = qs('#contact-status');
-=======
-  const phoneErr   = qs('#contact-phone-error');
-  const emailErr   = qs('#contact-email-error');
-  const subjectErr = qs('#contact-subject-error');
-  const msgErr     = qs('#contact-message-error');
->>>>>>> 8cadb3377467d427079034c5e6fa00411f78e766
 
   const summaryEl      = qs('#contact-summary');
   const summaryDetails = qs('#contact-summary-details', summaryEl);
   const previewBtn     = qs('#preview-contact-btn');
 
-<<<<<<< HEAD
-=======
-  // ── Preview
->>>>>>> 8cadb3377467d427079034c5e6fa00411f78e766
   if (previewBtn) {
     previewBtn.addEventListener('click', () => {
       if (!validateContactForm()) return;
       buildSummary(summaryDetails, {
         'Name':    nameEl.value.trim(),
-<<<<<<< HEAD
         'Email':   emailEl.value.trim(),
-=======
-        'Phone':   phoneEl.value.trim(),
-        'Email':   emailEl && emailEl.value.trim() ? emailEl.value.trim() : '—',
->>>>>>> 8cadb3377467d427079034c5e6fa00411f78e766
         'Subject': subjectEl.value.trim(),
         'Message': msgEl.value.trim()
       });
@@ -1032,10 +891,6 @@ function initContactForm() {
     });
   }
 
-<<<<<<< HEAD
-=======
-  // ── Validate
->>>>>>> 8cadb3377467d427079034c5e6fa00411f78e766
   function validateContactForm() {
     let valid = true;
 
@@ -1046,7 +901,6 @@ function initContactForm() {
       setValid(nameEl, nameErr);
     }
 
-<<<<<<< HEAD
     if (!emailEl || !emailEl.value.trim()) {
       setInvalid(emailEl, emailErr, 'Please enter your email address.');
       valid = false;
@@ -1054,26 +908,6 @@ function initContactForm() {
       setInvalid(emailEl, emailErr, 'Please enter a valid email address.');
       valid = false;
     } else {
-=======
-    if (!phoneEl || !phoneEl.value.trim()) {
-      setInvalid(phoneEl, phoneErr, 'Please enter your phone number.');
-      valid = false;
-    } else if (!isValidIndianPhone(phoneEl.value)) {
-      setInvalid(phoneEl, phoneErr, 'Enter a valid 10-digit Indian mobile number.');
-      valid = false;
-    } else {
-      setValid(phoneEl, phoneErr);
-    }
-
-    if (emailEl && emailEl.value.trim()) {
-      if (!isValidEmail(emailEl.value)) {
-        setInvalid(emailEl, emailErr, 'Please enter a valid email address.');
-        valid = false;
-      } else {
-        setValid(emailEl, emailErr);
-      }
-    } else if (emailEl) {
->>>>>>> 8cadb3377467d427079034c5e6fa00411f78e766
       setValid(emailEl, emailErr);
     }
 
@@ -1094,7 +928,6 @@ function initContactForm() {
     return valid;
   }
 
-<<<<<<< HEAD
   form.addEventListener('submit', async e => {
     e.preventDefault();
     if (!validateContactForm()) return;
@@ -1148,37 +981,6 @@ function initContactForm() {
   });
 
   [nameEl, emailEl, subjectEl, msgEl].forEach(el => {
-=======
-  // ── Submit → WhatsApp
-  form.addEventListener('submit', e => {
-    e.preventDefault();
-    if (!validateContactForm()) return;
-
-    const name    = nameEl.value.trim();
-    const phone   = phoneEl.value.trim();
-    const email   = emailEl && emailEl.value.trim() ? emailEl.value.trim() : '';
-    const subject = subjectEl.value.trim();
-    const message = msgEl.value.trim();
-
-    const lines = [
-      '📨 *Contact Message – Sri Devi One Saloon*',
-      '',
-      `*Name:* ${name}`,
-      `*Phone:* ${phone}`,
-      email ? `*Email:* ${email}` : '',
-      `*Subject:* ${subject}`,
-      `*Message:* ${message}`,
-      '',
-      '_Sent from the Sri Devi One Saloon website contact form._'
-    ].filter(l => l !== '');
-
-    const encoded = encodeURIComponent(lines.join('\n'));
-    window.open(`https://wa.me/${WHATSAPP_ENQUIRY}?text=${encoded}`, '_blank', 'noopener,noreferrer');
-  });
-
-  // Clear errors on input
-  [nameEl, phoneEl, emailEl, subjectEl, msgEl].forEach(el => {
->>>>>>> 8cadb3377467d427079034c5e6fa00411f78e766
     if (!el) return;
     el.addEventListener('input', () => {
       const errId = el.getAttribute('aria-describedby');
@@ -1270,10 +1072,7 @@ function initHeroImageReveal() {
 document.addEventListener('DOMContentLoaded', () => {
   initIcons();
   initCopyrightYear();
-<<<<<<< HEAD
   initWelcomeBanner();
-=======
->>>>>>> 8cadb3377467d427079034c5e6fa00411f78e766
   initStickyNav();
   initMobileMenu();
   initSmoothScroll();
