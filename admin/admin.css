@@ -836,6 +836,16 @@ a:hover {
 .badge-cancelled { background: var(--clr-danger-bg); color: #fca5a5; }
 .badge-active { background: var(--clr-success-bg); color: #6ee7b7; }
 .badge-inactive { background: rgba(142, 153, 172, 0.12); color: #9ca3af; }
+.badge-archived { background: rgba(239, 68, 68, 0.12); color: #f87171; border: 1px solid rgba(239, 68, 68, 0.25); }
+.badge-discount-savings { background: rgba(16, 185, 129, 0.12); color: #34d399; font-size: 11px; font-weight: 600; padding: 2px 6px; border-radius: 4px; display: inline-flex; align-items: center; gap: 3px; }
+.price-regular-val { font-weight: 700; color: var(--clr-gold); font-size: 14px; font-variant-numeric: tabular-nums; }
+.price-discount-val { font-weight: 700; color: #34d399; font-size: 14px; font-variant-numeric: tabular-nums; }
+.price-dash { color: var(--clr-text-muted); font-size: 14px; }
+.service-cell-wrap { display: flex; align-items: center; gap: 12px; }
+.service-cell-thumb { width: 56px; height: 42px; border-radius: 6px; object-fit: cover; border: 1px solid var(--clr-border); flex-shrink: 0; cursor: pointer; transition: transform 0.15s ease, border-color 0.15s ease; }
+.service-cell-thumb:hover { transform: scale(1.06); border-color: var(--clr-gold); }
+.service-cell-name { font-weight: 700; color: #fff; line-height: 1.25; }
+.service-cell-meta { font-size: 11px; color: var(--clr-text-muted); display: flex; align-items: center; gap: 8px; margin-top: 3px; flex-wrap: wrap; }
 
 /* ═══════════════════════════════════════════════════════════════════
    MODALS

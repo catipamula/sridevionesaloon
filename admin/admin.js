@@ -129,7 +129,7 @@ document.addEventListener('DOMContentLoaded', () => {
     if (tabName === 'dashboard') loadDashboardStats();
     if (tabName === 'appointments') loadAppointments();
     if (tabName === 'services') loadServices();
-    if (tabName === 'prices') loadBulkPrices();
+    if (tabName === 'prices') loadPriceList();
     if (tabName === 'content') loadSiteContent();
     if (tabName === 'gallery') loadGallery();
     if (tabName === 'templates') loadTemplates();
@@ -871,35 +871,53 @@ Choose: booked, confirmed, completed, cancelled`,
   });
 
   // ══════════════════════════════════════════════════════════════════
-  // 7. SERVICES MANAGEMENT (CRUD & PAGINATION)
+  // 7. SERVICES & PRICE LIST MANAGEMENT (FULL CRUD ENGINE)
   // ══════════════════════════════════════════════════════════════════
   let servicesPage = 1;
   const servicesPerPage = 8;
-  let servicesSearch = '';
+  let priceListPage = 1;
+  const priceListPerPage = 8;
+  let priceListMode = 'standard'; // 'standard' or 'bulk'
+  let pendingDeleteServiceId = null;
 
   window.changeServicesPage = (page) => {
     servicesPage = page;
     renderServices(allServices);
   };
 
+  window.changePriceListPage = (page) => {
+    priceListPage = page;
+    renderPriceList(allServices);
+  };
+
   const loadServices = async () => {
     try {
-      const res = await fetch('/api/admin/services');
+      const res = await fetch('/api/admin/services?include_archived=true');
       const data = await res.json();
       if (!data.success) throw new Error(data.error);
 
       allServices = data.services || [];
+      const activeCount = allServices.filter((s) => s.is_active && !s.is_archived).length;
+
       const badge = document.getElementById('services-count-badge');
-      if (badge) badge.textContent = `${allServices.length} Services`;
+      if (badge) badge.textContent = `${activeCount} Active Services`;
+
+      const priceBadge = document.getElementById('prices-count-badge');
+      if (priceBadge) priceBadge.textContent = `${allServices.length} Services`;
 
       renderServices(allServices);
-      if (currentTab === 'prices') loadBulkPrices();
+      renderPriceList(allServices);
     } catch (err) {
       console.error('Error fetching services:', err);
       showToast('Failed to load services catalogue.', 'danger');
     }
   };
 
+  const loadPriceList = async () => {
+    await loadServices();
+  };
+
+  // Render Services Catalogue Tab Table
   const renderServices = (services) => {
     const tbody = document.getElementById('services-tbody');
     const paginationInfo = document.getElementById('services-pagination-info');
@@ -909,7 +927,7 @@ Choose: booked, confirmed, completed, cancelled`,
     const catFilter = document.getElementById('services-category-filter')?.value || '';
     const searchFilter = (document.getElementById('services-search')?.value || '').trim().toLowerCase();
 
-    let filtered = services;
+    let filtered = services.filter((s) => !s.is_archived);
     if (catFilter) {
       filtered = filtered.filter((s) => s.category === catFilter);
     }
@@ -980,13 +998,16 @@ Choose: booked, confirmed, completed, cancelled`,
             <td>${svc.display_order || 0}</td>
             <td>
               <div style="display:flex; gap:6px;">
+                <button type="button" class="btn btn-secondary btn-sm" onclick="window.viewServiceDetails('${svc.id}')" title="View Details">
+                  <span data-lucide="eye" style="width:13px; height:13px;"></span>
+                </button>
                 <button type="button" class="btn btn-secondary btn-sm" onclick="window.editService('${svc.id}')" title="Edit Service">
                   <span data-lucide="edit" style="width:13px; height:13px;"></span>
                 </button>
                 <button type="button" class="btn btn-secondary btn-sm" onclick="window.toggleServiceActive('${svc.id}', ${!isAct})" title="${isAct ? 'Deactivate' : 'Activate'}">
                   <span data-lucide="${isAct ? 'eye-off' : 'eye'}" style="width:13px; height:13px; color:${isAct ? '#f59e0b' : '#10b981'};"></span>
                 </button>
-                <button type="button" class="btn btn-secondary btn-sm" onclick="window.deleteService('${svc.id}')" title="Delete or Archive">
+                <button type="button" class="btn btn-secondary btn-sm" onclick="window.confirmDeleteService('${svc.id}')" title="Delete or Archive">
                   <span data-lucide="trash-2" style="width:13px; height:13px; color:#ef4444;"></span>
                 </button>
               </div>
@@ -1007,8 +1028,350 @@ Choose: booked, confirmed, completed, cancelled`,
   document.getElementById('services-search')?.addEventListener('input', debounce(() => {
     servicesPage = 1;
     renderServices(allServices);
-  }, 300));
+  }, 250));
 
+  // ══════════════════════════════════════════════════════════════════
+  // 8. PRICE LIST & CATALOGUE MANAGER (TABLE, BULK, CRUD)
+  // ══════════════════════════════════════════════════════════════════
+  const renderPriceList = (services) => {
+    const tbody = document.getElementById('prices-tbody');
+    const paginationInfo = document.getElementById('prices-pagination-info');
+    const paginationControls = document.getElementById('prices-pagination-controls');
+    if (!tbody) return;
+
+    if (priceListMode === 'bulk') {
+      renderBulkPriceTable(services);
+      return;
+    }
+
+    const catFilter = document.getElementById('prices-category-filter')?.value || '';
+    const statusFilter = document.getElementById('prices-status-filter')?.value || '';
+    const searchFilter = (document.getElementById('prices-search')?.value || '').trim().toLowerCase();
+    const sortMode = document.getElementById('prices-sort')?.value || 'price-asc';
+
+    let filtered = [...services];
+
+    if (catFilter) {
+      filtered = filtered.filter((s) => s.category === catFilter);
+    }
+    if (statusFilter === 'active') {
+      filtered = filtered.filter((s) => s.is_active && !s.is_archived);
+    } else if (statusFilter === 'inactive') {
+      filtered = filtered.filter((s) => !s.is_active && !s.is_archived);
+    } else if (statusFilter === 'archived') {
+      filtered = filtered.filter((s) => s.is_archived);
+    }
+
+    if (searchFilter) {
+      filtered = filtered.filter(
+        (s) => (s.name || '').toLowerCase().includes(searchFilter) || (s.id || '').toLowerCase().includes(searchFilter)
+      );
+    }
+
+    // Sort items
+    if (sortMode === 'price-asc') {
+      filtered.sort((a, b) => (a.payable_price || a.price) - (b.payable_price || b.price));
+    } else if (sortMode === 'price-desc') {
+      filtered.sort((a, b) => (b.payable_price || b.price) - (a.payable_price || a.price));
+    } else if (sortMode === 'name-asc') {
+      filtered.sort((a, b) => (a.name || '').localeCompare(b.name || ''));
+    } else if (sortMode === 'name-desc') {
+      filtered.sort((a, b) => (b.name || '').localeCompare(a.name || ''));
+    } else if (sortMode === 'order-asc') {
+      filtered.sort((a, b) => (a.display_order || 0) - (b.display_order || 0));
+    }
+
+    if (!filtered.length) {
+      tbody.innerHTML = `<tr><td colspan="5" style="text-align:center; color:var(--clr-text-muted); padding:30px;">No price list items found matching the selected filters.</td></tr>`;
+      if (paginationInfo) paginationInfo.textContent = 'Showing 0 of 0 services';
+      if (paginationControls) paginationControls.innerHTML = '';
+      return;
+    }
+
+    const totalItems = filtered.length;
+    const totalPages = Math.ceil(totalItems / priceListPerPage) || 1;
+    if (priceListPage > totalPages) priceListPage = totalPages;
+    if (priceListPage < 1) priceListPage = 1;
+
+    const startIndex = (priceListPage - 1) * priceListPerPage;
+    const endIndex = Math.min(startIndex + priceListPerPage, totalItems);
+    const pagedServices = filtered.slice(startIndex, endIndex);
+
+    if (paginationInfo) {
+      paginationInfo.textContent = `Showing ${startIndex + 1}–${endIndex} of ${totalItems} items (Page ${priceListPage} of ${totalPages})`;
+    }
+
+    if (paginationControls) {
+      let btns = `
+        <button type="button" class="page-btn" ${priceListPage === 1 ? 'disabled' : ''} onclick="window.changePriceListPage(${priceListPage - 1})">Prev</button>
+      `;
+      for (let p = 1; p <= totalPages; p++) {
+        if (p === 1 || p === totalPages || (p >= priceListPage - 1 && p <= priceListPage + 1)) {
+          btns += `<button type="button" class="page-btn ${p === priceListPage ? 'active' : ''}" onclick="window.changePriceListPage(${p})">${p}</button>`;
+        } else if (p === priceListPage - 2 || p === priceListPage + 2) {
+          btns += `<span style="padding:0 3px; color:var(--clr-text-muted);">…</span>`;
+        }
+      }
+      btns += `
+        <button type="button" class="page-btn" ${priceListPage === totalPages ? 'disabled' : ''} onclick="window.changePriceListPage(${priceListPage + 1})">Next</button>
+      `;
+      paginationControls.innerHTML = btns;
+    }
+
+    tbody.innerHTML = pagedServices
+      .map((s) => {
+        const imgSrc = s.image_url || '/assets/logo.png';
+        const isArchived = Boolean(s.is_archived);
+        const isActive = Boolean(s.is_active);
+        const hasDiscount = Boolean(s.discount_price && s.discount_price > 0 && s.discount_price < s.price);
+        const savings = hasDiscount ? s.price - s.discount_price : 0;
+
+        let statusBadge = '';
+        if (isArchived) {
+          statusBadge = '<span class="badge badge-archived">Archived</span>';
+        } else if (isActive) {
+          statusBadge = '<span class="badge badge-active">Active</span>';
+        } else {
+          statusBadge = '<span class="badge badge-inactive">Inactive</span>';
+        }
+
+        const discountCell = hasDiscount
+          ? `<div style="display:flex; flex-direction:column; align-items:flex-end; gap:2px;">
+               <span class="price-discount-val">${formatINR(s.discount_price)}</span>
+               <span class="badge-discount-savings">Save ${formatINR(savings)}</span>
+             </div>`
+          : `<span class="price-dash">—</span>`;
+
+        const descSnippet = s.description
+          ? `<div style="font-size:11px; color:var(--clr-text-muted); max-width:260px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;" title="${escapeHtml(s.description)}">${escapeHtml(s.description)}</div>`
+          : '';
+
+        let actionButtons = `
+          <div style="display:flex; justify-content:center; gap:6px;">
+            <button type="button" class="btn btn-secondary btn-sm" onclick="window.viewServiceDetails('${s.id}')" title="View Full Details">
+              <span data-lucide="eye" style="width:13px; height:13px;"></span>
+            </button>
+            <button type="button" class="btn btn-secondary btn-sm" onclick="window.editService('${s.id}')" title="Edit Service & Prices">
+              <span data-lucide="edit" style="width:13px; height:13px;"></span>
+            </button>
+        `;
+
+        if (isArchived) {
+          actionButtons += `
+            <button type="button" class="btn btn-outline-gold btn-sm" onclick="window.restoreService('${s.id}')" title="Restore to Active Catalogue">
+              <span data-lucide="rotate-ccw" style="width:13px; height:13px; color:var(--clr-gold);"></span>
+            </button>
+          `;
+        } else {
+          actionButtons += `
+            <button type="button" class="btn btn-secondary btn-sm" onclick="window.toggleServiceActive('${s.id}', ${!isActive})" title="${isActive ? 'Deactivate' : 'Activate'}">
+              <span data-lucide="${isActive ? 'eye-off' : 'eye'}" style="width:13px; height:13px; color:${isActive ? '#f59e0b' : '#10b981'};"></span>
+            </button>
+            <button type="button" class="btn btn-secondary btn-sm" onclick="window.confirmDeleteService('${s.id}')" title="Delete or Archive Service">
+              <span data-lucide="trash-2" style="width:13px; height:13px; color:#ef4444;"></span>
+            </button>
+          `;
+        }
+
+        actionButtons += '</div>';
+
+        return `
+          <tr>
+            <td>
+              <div class="service-cell-wrap">
+                <img src="${escapeHtml(imgSrc)}" alt="${escapeHtml(s.name)}" class="service-cell-thumb" onclick="window.previewFullImage('${escapeHtml(imgSrc)}', '${escapeHtml(s.name)}')" onerror="this.src='/assets/logo.png';" title="Click to view full image" />
+                <div>
+                  <div class="service-cell-name">${escapeHtml(s.name)}</div>
+                  <div class="service-cell-meta">
+                    <span class="badge badge-category" style="font-size:10px; padding:1px 6px;">${escapeHtml(s.category || 'Hair & Grooming')}</span>
+                    <span>${s.duration_minutes || 30} mins</span>
+                    <span style="font-family:monospace; opacity:0.6;">${escapeHtml(s.id)}</span>
+                  </div>
+                  ${descSnippet}
+                </div>
+              </div>
+            </td>
+            <td style="text-align:right;">
+              <span class="price-regular-val">${formatINR(s.price)}</span>
+            </td>
+            <td style="text-align:right;">
+              ${discountCell}
+            </td>
+            <td style="text-align:center;">
+              ${statusBadge}
+            </td>
+            <td>
+              ${actionButtons}
+            </td>
+          </tr>
+        `;
+      })
+      .join('');
+
+    if (window.lucide) lucide.createIcons();
+  };
+
+  // Render Bulk Inline Editor Table
+  const renderBulkPriceTable = (services) => {
+    const tbody = document.getElementById('bulk-prices-tbody');
+    if (!tbody) return;
+
+    const catFilter = document.getElementById('prices-category-filter')?.value || '';
+    const searchFilter = (document.getElementById('prices-search')?.value || '').trim().toLowerCase();
+
+    let filtered = services.filter((s) => !s.is_archived);
+    if (catFilter) {
+      filtered = filtered.filter((s) => s.category === catFilter);
+    }
+    if (searchFilter) {
+      filtered = filtered.filter(
+        (s) => (s.name || '').toLowerCase().includes(searchFilter) || (s.id || '').toLowerCase().includes(searchFilter)
+      );
+    }
+
+    if (!filtered.length) {
+      tbody.innerHTML = `<tr><td colspan="6" style="text-align:center; color:var(--clr-text-muted); padding:30px;">No editable services match filters.</td></tr>`;
+      return;
+    }
+
+    tbody.innerHTML = filtered
+      .map((s) => {
+        return `
+        <tr data-service-id="${s.id}" data-category="${escapeHtml(s.category || 'Hair & Grooming')}">
+          <td>
+            <div style="font-weight:700; color:#fff;">${escapeHtml(s.name)}</div>
+            <div style="font-size:11px; color:var(--clr-text-muted); font-family:monospace;">${escapeHtml(s.id)}</div>
+          </td>
+          <td><span class="badge badge-category">${escapeHtml(s.category || 'Hair & Grooming')}</span></td>
+          <td>
+            <div style="display:flex; align-items:center; gap:4px;">
+              <span style="color:var(--clr-gold); font-weight:700;">₹</span>
+              <input type="number" class="form-control bulk-price-input" style="width:110px; padding:6px;" value="${s.price}" min="0" required />
+            </div>
+          </td>
+          <td>
+            <div style="display:flex; align-items:center; gap:4px;">
+              <span style="color:var(--clr-gold); font-weight:700;">₹</span>
+              <input type="number" class="form-control bulk-discount-input" style="width:110px; padding:6px;" value="${s.discount_price || ''}" min="0" placeholder="Optional" />
+            </div>
+          </td>
+          <td>
+            <input type="number" class="form-control bulk-order-input" style="width:75px; padding:6px;" value="${s.display_order || 0}" />
+          </td>
+          <td style="text-align:center;">
+            <label class="checkbox-label" style="font-size:12px; justify-content:center;">
+              <input type="checkbox" class="bulk-active-input" ${s.is_active ? 'checked' : ''} />
+              <span>Active</span>
+            </label>
+          </td>
+        </tr>
+      `;
+      })
+      .join('');
+  };
+
+  // Toggle Bulk Mode
+  document.getElementById('toggle-bulk-mode-btn')?.addEventListener('click', () => {
+    priceListMode = priceListMode === 'standard' ? 'bulk' : 'standard';
+    const isBulk = priceListMode === 'bulk';
+
+    const standardWrap = document.getElementById('standard-prices-wrapper');
+    const bulkWrap = document.getElementById('bulk-prices-wrapper');
+    const saveBulkBtn = document.getElementById('save-bulk-prices-btn');
+    const toggleLabel = document.getElementById('bulk-toggle-label');
+    const paginationBar = document.getElementById('prices-pagination-bar');
+
+    if (standardWrap) standardWrap.style.display = isBulk ? 'none' : 'block';
+    if (bulkWrap) bulkWrap.style.display = isBulk ? 'block' : 'none';
+    if (saveBulkBtn) saveBulkBtn.style.display = isBulk ? 'inline-flex' : 'none';
+    if (paginationBar) paginationBar.style.display = isBulk ? 'none' : 'flex';
+    if (toggleLabel) toggleLabel.textContent = isBulk ? 'Standard View' : 'Quick Bulk Editor';
+
+    renderPriceList(allServices);
+  });
+
+  // Bulk Price Save
+  document.getElementById('save-bulk-prices-btn')?.addEventListener('click', async () => {
+    const saveBtn = document.getElementById('save-bulk-prices-btn');
+    const rows = document.querySelectorAll('#bulk-prices-tbody tr[data-service-id]');
+    const updates = [];
+
+    for (const tr of rows) {
+      const id = tr.dataset.serviceId;
+      const priceVal = tr.querySelector('.bulk-price-input')?.value;
+      const discountVal = tr.querySelector('.bulk-discount-input')?.value.trim();
+      const display_order = Number(tr.querySelector('.bulk-order-input')?.value) || 0;
+      const is_active = tr.querySelector('.bulk-active-input')?.checked ? 1 : 0;
+
+      const price = Number(priceVal);
+      if (isNaN(price) || price < 0) {
+        showToast(`Invalid price for service "${id}". Regular prices cannot be negative.`, 'danger');
+        return;
+      }
+
+      let discount_price = null;
+      if (discountVal !== '') {
+        discount_price = Number(discountVal);
+        if (isNaN(discount_price) || discount_price < 0) {
+          showToast(`Invalid discount price for service "${id}". Discount cannot be negative.`, 'danger');
+          return;
+        }
+        if (discount_price >= price) {
+          showToast(`Discount for "${id}" (₹${discount_price}) must be less than regular price (₹${price}).`, 'danger');
+          return;
+        }
+      }
+
+      updates.push({ id, price, discount_price, display_order, is_active });
+    }
+
+    if (!confirm(`Save and synchronize ${updates.length} price change(s) across the entire salon website and booking system?`)) return;
+
+    try {
+      if (saveBtn) {
+        saveBtn.disabled = true;
+        saveBtn.textContent = 'Saving Changes...';
+      }
+      showToast('Synchronizing price updates...', 'info');
+      const res = await fetch('/api/admin/services/bulk-prices', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ updates }),
+      });
+      const data = await res.json();
+      if (!data.success) throw new Error(data.error);
+
+      showToast(data.message || 'All service prices synchronized successfully across website!');
+      loadServices();
+      loadDashboardStats();
+    } catch (err) {
+      showToast(err.message || 'Failed to save prices', 'danger');
+    } finally {
+      if (saveBtn) {
+        saveBtn.disabled = false;
+        saveBtn.textContent = 'Save All Price Changes';
+      }
+    }
+  });
+
+  // Price List Filters
+  document.getElementById('prices-search')?.addEventListener('input', debounce(() => {
+    priceListPage = 1;
+    renderPriceList(allServices);
+  }, 250));
+  document.getElementById('prices-category-filter')?.addEventListener('change', () => {
+    priceListPage = 1;
+    renderPriceList(allServices);
+  });
+  document.getElementById('prices-status-filter')?.addEventListener('change', () => {
+    priceListPage = 1;
+    renderPriceList(allServices);
+  });
+  document.getElementById('prices-sort')?.addEventListener('change', () => {
+    renderPriceList(allServices);
+  });
+
+  // Add Service Modal Open
   const openAddServiceModal = () => {
     document.getElementById('service-modal-title').textContent = 'Add New Salon Service';
     document.getElementById('service-form').reset();
@@ -1020,6 +1383,7 @@ Choose: booked, confirmed, completed, cancelled`,
   };
 
   document.getElementById('open-add-service-modal')?.addEventListener('click', openAddServiceModal);
+  document.getElementById('price-list-add-btn')?.addEventListener('click', openAddServiceModal);
 
   // Auto slug generation on name input
   document.getElementById('svc-name')?.addEventListener('input', (e) => {
@@ -1032,7 +1396,7 @@ Choose: booked, confirmed, completed, cancelled`,
     }
   });
 
-  // Edit service
+  // Edit Service & Price
   window.editService = (id) => {
     const svc = allServices.find((s) => s.id === id);
     if (!svc) return;
@@ -1043,7 +1407,7 @@ Choose: booked, confirmed, completed, cancelled`,
     document.getElementById('svc-slug').disabled = true;
     document.getElementById('svc-name').value = svc.name;
     document.getElementById('svc-price').value = svc.price;
-    document.getElementById('svc-discount').value = svc.discount_price || '';
+    document.getElementById('svc-discount').value = svc.discount_price !== null && svc.discount_price !== undefined ? svc.discount_price : '';
     document.getElementById('svc-duration').value = svc.duration_minutes || 30;
     document.getElementById('svc-category').value = svc.category || 'Hair & Grooming';
     document.getElementById('svc-order').value = svc.display_order || 0;
@@ -1061,6 +1425,90 @@ Choose: booked, confirmed, completed, cancelled`,
     }
 
     openModal('modal-service');
+  };
+
+  // View Service & Price Details Modal
+  window.viewServiceDetails = (id) => {
+    const s = allServices.find((x) => x.id === id);
+    if (!s) return;
+
+    document.getElementById('view-svc-title').textContent = `Service Details: ${s.name}`;
+    const body = document.getElementById('view-svc-body');
+    const imgSrc = s.image_url || '/assets/logo.png';
+    const hasDiscount = Boolean(s.discount_price && s.discount_price > 0 && s.discount_price < s.price);
+    const savings = hasDiscount ? s.price - s.discount_price : 0;
+    const pct = hasDiscount ? Math.round((savings / s.price) * 100) : 0;
+    const isArchived = Boolean(s.is_archived);
+    const isActive = Boolean(s.is_active);
+
+    let statusHtml = '';
+    if (isArchived) {
+      statusHtml = '<span class="badge badge-archived">Archived (Hidden from Booking)</span>';
+    } else if (isActive) {
+      statusHtml = '<span class="badge badge-active">Active &amp; Bookable</span>';
+    } else {
+      statusHtml = '<span class="badge badge-inactive">Inactive</span>';
+    }
+
+    body.innerHTML = `
+      <div style="display:flex; gap:16px; align-items:center; margin-bottom:18px; background:rgba(197,160,89,0.06); padding:14px; border-radius:var(--radius-md); border:1px solid var(--clr-border-gold);">
+        <img src="${escapeHtml(imgSrc)}" alt="${escapeHtml(s.name)}" style="width:84px; height:64px; border-radius:6px; object-fit:cover; border:1px solid var(--clr-border); cursor:pointer;" onclick="window.previewFullImage('${escapeHtml(imgSrc)}', '${escapeHtml(s.name)}')" title="Click to enlarge" onerror="this.src='/assets/logo.png';" />
+        <div>
+          <div style="font-size:17px; font-weight:700; color:#fff;">${escapeHtml(s.name)}</div>
+          <div style="font-size:12px; color:var(--clr-text-muted); font-family:monospace; margin-top:2px;">ID / Slug: ${escapeHtml(s.id)}</div>
+          <div style="margin-top:6px;">${statusHtml}</div>
+        </div>
+      </div>
+
+      <div style="display:grid; grid-template-columns:1fr 1fr; gap:14px; margin-bottom:16px;">
+        <div style="background:var(--clr-bg-input); padding:12px; border-radius:var(--radius-sm); border:1px solid var(--clr-border);">
+          <span style="font-size:11px; text-transform:uppercase; color:var(--clr-text-muted); font-weight:700;">Regular Price</span>
+          <div style="font-size:18px; font-weight:700; color:var(--clr-gold);">${formatINR(s.price)}</div>
+        </div>
+        <div style="background:var(--clr-bg-input); padding:12px; border-radius:var(--radius-sm); border:1px solid var(--clr-border);">
+          <span style="font-size:11px; text-transform:uppercase; color:var(--clr-text-muted); font-weight:700;">Discount Price</span>
+          <div style="font-size:18px; font-weight:700; color:${hasDiscount ? '#34d399' : 'var(--clr-text-muted)'};">
+            ${hasDiscount ? `${formatINR(s.discount_price)} <span style="font-size:11px; background:rgba(16,185,129,0.15); padding:2px 6px; border-radius:4px;">-${pct}% OFF</span>` : 'None (Regular)'}
+          </div>
+        </div>
+        <div style="background:var(--clr-bg-input); padding:12px; border-radius:var(--radius-sm); border:1px solid var(--clr-border);">
+          <span style="font-size:11px; text-transform:uppercase; color:var(--clr-text-muted); font-weight:700;">Service Duration</span>
+          <div style="font-size:15px; font-weight:600; color:#fff;">${s.duration_minutes || 30} minutes</div>
+        </div>
+        <div style="background:var(--clr-bg-input); padding:12px; border-radius:var(--radius-sm); border:1px solid var(--clr-border);">
+          <span style="font-size:11px; text-transform:uppercase; color:var(--clr-text-muted); font-weight:700;">Category</span>
+          <div style="font-size:15px; font-weight:600; color:#fff;">${escapeHtml(s.category || 'Hair & Grooming')}</div>
+        </div>
+      </div>
+
+      <div style="background:rgba(255,255,255,0.02); padding:12px; border-radius:var(--radius-sm); border:1px solid var(--clr-border); margin-bottom:14px;">
+        <span style="font-size:11px; text-transform:uppercase; color:var(--clr-text-muted); font-weight:700;">Customer Booking History</span>
+        <div style="font-size:13px; color:#e0e4eb; margin-top:4px;">
+          Linked to <strong style="color:var(--clr-gold);">${s.appointment_count || 0}</strong> confirmed or completed appointment(s).
+          <div style="font-size:11px; color:var(--clr-text-muted); margin-top:2px;">Historical appointment prices are permanently preserved and remain unchanged.</div>
+        </div>
+      </div>
+
+      ${
+        s.description
+          ? `<div style="margin-bottom:10px;">
+               <span style="font-size:11px; text-transform:uppercase; color:var(--clr-text-muted); font-weight:700;">Description</span>
+               <p style="font-size:13px; color:#e0e4eb; background:var(--clr-bg-input); padding:10px; border-radius:6px; border:1px solid var(--clr-border); margin-top:4px;">${escapeHtml(s.description)}</p>
+             </div>`
+          : ''
+      }
+    `;
+
+    const editBtn = document.getElementById('view-svc-edit-btn');
+    if (editBtn) {
+      editBtn.onclick = () => {
+        closeModal('modal-view-service');
+        window.editService(id);
+      };
+    }
+
+    openModal('modal-view-service');
+    if (window.lucide) lucide.createIcons();
   };
 
   // Image file upload inside service modal
@@ -1091,22 +1539,44 @@ Choose: booked, confirmed, completed, cancelled`,
     }
   });
 
-  // Save Service (Create or Update)
+  // Save Service (Create or Update with Full Validation)
   document.getElementById('service-form')?.addEventListener('submit', async (e) => {
     e.preventDefault();
     const saveBtn = document.getElementById('svc-save-btn');
     const existingId = document.getElementById('svc-id').value.trim();
     const slug = document.getElementById('svc-slug').value.trim();
     const name = document.getElementById('svc-name').value.trim();
-    const price = Number(document.getElementById('svc-price').value);
-    const discountVal = document.getElementById('svc-discount').value;
-    const discount_price = discountVal ? Number(discountVal) : null;
+    const priceVal = document.getElementById('svc-price').value;
+    const discountVal = document.getElementById('svc-discount').value.trim();
     const duration_minutes = Number(document.getElementById('svc-duration').value) || 30;
     const category = document.getElementById('svc-category').value;
     const display_order = Number(document.getElementById('svc-order').value) || 0;
     const description = document.getElementById('svc-desc').value.trim();
     const image_url = document.getElementById('svc-image').value.trim();
     const is_active = document.getElementById('svc-active').checked ? 1 : 0;
+
+    if (!name) {
+      showToast('Service name is required.', 'danger');
+      return;
+    }
+    const price = Number(priceVal);
+    if (isNaN(price) || price < 0) {
+      showToast('Regular Price (₹) must be 0 or greater.', 'danger');
+      return;
+    }
+
+    let discount_price = null;
+    if (discountVal !== '') {
+      discount_price = Number(discountVal);
+      if (isNaN(discount_price) || discount_price < 0) {
+        showToast('Discount price cannot be negative.', 'danger');
+        return;
+      }
+      if (discount_price >= price) {
+        showToast(`Discount price (₹${discount_price}) must be strictly less than Regular Price (₹${price}).`, 'danger');
+        return;
+      }
+    }
 
     const payload = {
       id: existingId || slug,
@@ -1138,7 +1608,7 @@ Choose: booked, confirmed, completed, cancelled`,
       const data = await res.json();
       if (!data.success) throw new Error(data.error);
 
-      showToast(`Service "${name}" saved successfully!`);
+      showToast(data.message || `Service "${name}" saved successfully!`);
       closeModal('modal-service');
       loadServices();
       loadDashboardStats();
@@ -1152,7 +1622,7 @@ Choose: booked, confirmed, completed, cancelled`,
     }
   });
 
-  // Toggle Service Active
+  // Toggle Service Active/Inactive Status
   window.toggleServiceActive = async (id, newActive) => {
     try {
       const res = await fetch(`/api/admin/services/${id}`, {
@@ -1163,7 +1633,7 @@ Choose: booked, confirmed, completed, cancelled`,
       const data = await res.json();
       if (!data.success) throw new Error(data.error);
 
-      showToast(`Service status updated.`);
+      showToast(`Service status updated to ${newActive ? 'Active' : 'Inactive'}.`);
       loadServices();
       loadDashboardStats();
     } catch (err) {
@@ -1171,138 +1641,101 @@ Choose: booked, confirmed, completed, cancelled`,
     }
   };
 
-  // Delete / Archive Service
-  window.deleteService = async (id) => {
-    if (!confirm(`Are you sure you want to archive service "${id}"? It will be removed from public booking.`)) return;
+  // Confirm Delete or Archive Service Modal
+  window.confirmDeleteService = (id) => {
+    const s = allServices.find((x) => x.id === id);
+    if (!s) return;
 
-    try {
-      const res = await fetch(`/api/admin/services/${id}`, { method: 'DELETE' });
-      const data = await res.json();
-      if (!data.success) throw new Error(data.error);
+    pendingDeleteServiceId = id;
+    const titleEl = document.getElementById('confirm-del-title');
+    const bodyEl = document.getElementById('confirm-del-body');
+    const footerEl = document.getElementById('confirm-del-footer');
 
-      showToast('Service archived from active catalogue.');
-      loadServices();
-      loadDashboardStats();
-    } catch (err) {
-      showToast(err.message || 'Archive failed', 'danger');
-    }
-  };
+    const aptCount = s.appointment_count || 0;
+    if (titleEl) titleEl.textContent = aptCount > 0 ? `Archive Service: ${s.name}` : `Delete Service: ${s.name}`;
 
-  // ══════════════════════════════════════════════════════════════════
-  // 8. PRICE LIST & BULK UPDATE (FILTERING & MANAGEMENT)
-  // ══════════════════════════════════════════════════════════════════
-  const filterBulkPrices = () => {
-    const q = (document.getElementById('bulk-prices-search')?.value || '').trim().toLowerCase();
-    const cat = document.getElementById('bulk-prices-category-filter')?.value || '';
-    const rows = document.querySelectorAll('#bulk-prices-tbody tr[data-service-id]');
-
-    rows.forEach((tr) => {
-      const name = (tr.querySelector('.bulk-name-label')?.textContent || '').toLowerCase();
-      const id = (tr.dataset.serviceId || '').toLowerCase();
-      const rowCat = tr.dataset.category || '';
-      const matchQ = !q || name.includes(q) || id.includes(q);
-      const matchCat = !cat || rowCat === cat;
-      tr.style.display = matchQ && matchCat ? '' : 'none';
-    });
-  };
-
-  document.getElementById('bulk-prices-search')?.addEventListener('input', debounce(filterBulkPrices, 200));
-  document.getElementById('bulk-prices-category-filter')?.addEventListener('change', filterBulkPrices);
-
-  const loadBulkPrices = async () => {
-    try {
-      const res = await fetch('/api/admin/services');
-      const data = await res.json();
-      if (!data.success) throw new Error(data.error);
-
-      const services = data.services || [];
-      const tbody = document.getElementById('bulk-prices-tbody');
-      if (!tbody) return;
-
-      tbody.innerHTML = services
-        .map((s) => {
-          return `
-          <tr data-service-id="${s.id}" data-category="${escapeHtml(s.category || 'Hair & Grooming')}">
-            <td>
-              <div class="bulk-name-label" style="font-weight:700; color:#fff;">${escapeHtml(s.name)}</div>
-              <div style="font-size:11px; color:var(--clr-text-muted); font-family:monospace;">${escapeHtml(s.id)}</div>
-            </td>
-            <td><span class="badge badge-category">${escapeHtml(s.category || 'Hair & Grooming')}</span></td>
-            <td>
-              <div style="display:flex; align-items:center; gap:4px;">
-                <span style="color:var(--clr-gold); font-weight:700;">₹</span>
-                <input type="number" class="form-control bulk-price-input" style="width:100px; padding:6px;" value="${s.price}" min="0" />
-              </div>
-            </td>
-            <td>
-              <div style="display:flex; align-items:center; gap:4px;">
-                <span style="color:var(--clr-gold); font-weight:700;">₹</span>
-                <input type="number" class="form-control bulk-discount-input" style="width:100px; padding:6px;" value="${s.discount_price || ''}" min="0" placeholder="None" />
-              </div>
-            </td>
-            <td>
-              <input type="number" class="form-control bulk-order-input" style="width:70px; padding:6px;" value="${s.display_order || 0}" />
-            </td>
-            <td>
-              <label class="checkbox-label" style="font-size:12px;">
-                <input type="checkbox" class="bulk-active-input" ${s.is_active ? 'checked' : ''} />
-                <span>Active</span>
-              </label>
-            </td>
-          </tr>
+    if (bodyEl) {
+      if (aptCount > 0) {
+        bodyEl.innerHTML = `
+          <div style="background:rgba(245,158,11,0.1); border:1px solid rgba(245,158,11,0.3); padding:14px; border-radius:var(--radius-md); margin-bottom:14px;">
+            <div style="display:flex; align-items:center; gap:8px; font-weight:700; color:#fcd34d; margin-bottom:4px;">
+              <span data-lucide="shield-alert" style="width:16px; height:16px;"></span>
+              Historical Bookings Protected
+            </div>
+            <div style="font-size:13px; color:#e5e7eb;">
+              Service <strong>"${escapeHtml(s.name)}"</strong> is referenced in <strong>${aptCount} past booking(s)</strong>.
+            </div>
+          </div>
+          <p style="font-size:13px; color:var(--clr-text-muted);">
+            To protect accounting records and confirmed pricing snapshots, this service will be <strong>ARCHIVED</strong>. It will be hidden from new bookings, while past appointment receipts and customer history remain 100% intact.
+          </p>
         `;
-        })
-        .join('');
-
-      filterBulkPrices();
-    } catch (err) {
-      console.error('Error loading bulk prices:', err);
-      showToast('Failed to load prices.', 'danger');
+        if (footerEl) {
+          footerEl.innerHTML = `
+            <button type="button" class="btn btn-secondary" data-close-modal>Cancel</button>
+            <button type="button" class="btn btn-danger" onclick="window.executeDeleteService('${s.id}', false)">Archive Service</button>
+          `;
+        }
+      } else {
+        bodyEl.innerHTML = `
+          <p style="font-size:13px; color:#e0e4eb; margin-bottom:12px;">
+            Are you sure you want to remove service <strong>"${escapeHtml(s.name)}"</strong> (₹${s.price})?
+          </p>
+          <p style="font-size:12px; color:var(--clr-text-muted);">
+            This service has 0 customer bookings. You may permanently remove it from the catalogue or archive it.
+          </p>
+        `;
+        if (footerEl) {
+          footerEl.innerHTML = `
+            <button type="button" class="btn btn-secondary" data-close-modal>Cancel</button>
+            <button type="button" class="btn btn-secondary" onclick="window.executeDeleteService('${s.id}', false)">Archive</button>
+            <button type="button" class="btn btn-danger" onclick="window.executeDeleteService('${s.id}', true)">Permanently Delete</button>
+          `;
+        }
+      }
     }
+
+    openModal('modal-confirm-delete-service');
+    if (window.lucide) lucide.createIcons();
   };
 
-  document.getElementById('save-bulk-prices-btn')?.addEventListener('click', async () => {
-    const saveBtn = document.getElementById('save-bulk-prices-btn');
-    const rows = document.querySelectorAll('#bulk-prices-tbody tr[data-service-id]');
-    const updates = [];
-
-    rows.forEach((tr) => {
-      const id = tr.dataset.serviceId;
-      const price = Number(tr.querySelector('.bulk-price-input')?.value);
-      const discountVal = tr.querySelector('.bulk-discount-input')?.value;
-      const discount_price = discountVal ? Number(discountVal) : null;
-      const display_order = Number(tr.querySelector('.bulk-order-input')?.value) || 0;
-      const is_active = tr.querySelector('.bulk-active-input')?.checked ? 1 : 0;
-
-      updates.push({ id, price, discount_price, display_order, is_active });
-    });
-
+  // Execute Delete or Archive
+  window.executeDeleteService = async (id, permanent = false) => {
     try {
-      if (saveBtn) {
-        saveBtn.disabled = true;
-        saveBtn.textContent = 'Saving Changes...';
-      }
-      showToast('Saving price updates...', 'info');
-      const res = await fetch('/api/admin/services/bulk-prices', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ updates }),
+      showToast(permanent ? 'Deleting service...' : 'Archiving service...', 'info');
+      const res = await fetch(`/api/admin/services/${id}?permanent=${permanent ? 'true' : 'false'}`, {
+        method: 'DELETE',
       });
       const data = await res.json();
       if (!data.success) throw new Error(data.error);
 
-      showToast('All service prices updated successfully!');
-      loadBulkPrices();
+      closeModal('modal-confirm-delete-service');
+      showToast(data.message || 'Service updated successfully.');
       loadServices();
+      loadDashboardStats();
     } catch (err) {
-      showToast(err.message || 'Failed to save prices', 'danger');
-    } finally {
-      if (saveBtn) {
-        saveBtn.disabled = false;
-        saveBtn.textContent = 'Save All Price Changes';
-      }
+      showToast(err.message || 'Failed to delete/archive service', 'danger');
     }
-  });
+  };
+
+  // Restore Archived Service
+  window.restoreService = async (id) => {
+    try {
+      showToast('Restoring service...', 'info');
+      const res = await fetch(`/api/admin/services/${id}/restore`, { method: 'POST' });
+      const data = await res.json();
+      if (!data.success) throw new Error(data.error);
+
+      showToast(data.message || 'Service restored to active price list!');
+      loadServices();
+      loadDashboardStats();
+    } catch (err) {
+      showToast(err.message || 'Failed to restore service', 'danger');
+    }
+  };
+
+  // Backward compatibility alias
+  window.deleteService = (id) => window.confirmDeleteService(id);
 
   // ══════════════════════════════════════════════════════════════════
   // 9. WEBSITE CONTENT CMS (PREVIEWS & EDITING)

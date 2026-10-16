@@ -599,16 +599,25 @@ function initBookingForm() {
           .map(cb => cb.value)
       );
 
+      // 1. Synchronize Booking Form Selection Cards & Live Calculator
       gridContainer.innerHTML = data.services.map(svc => {
         const isChecked = previouslyChecked.has(svc.id);
         const cardSelectedClass = isChecked ? ' is-selected' : '';
         const checkedAttr = isChecked ? ' checked' : '';
         const descHtml = svc.description ? `<p class="service-card-desc">${escapeHtml(svc.description)}</p>` : '';
-        const discountHtml = svc.discount_price ? `<span class="service-card-old-price">₹${svc.discount_price}</span>` : '';
+
+        const payablePrice = (svc.discount_price && svc.discount_price > 0 && svc.discount_price < svc.price)
+          ? svc.discount_price
+          : (svc.payable_price || svc.price);
+        const hasDiscount = payablePrice < svc.price;
+
+        const priceDisplay = hasDiscount
+          ? `<span class="service-card-old-price" style="text-decoration:line-through; opacity:0.6; margin-right:4px;">₹${svc.price}</span>₹${payablePrice}`
+          : `₹${svc.price}`;
 
         return `
-          <label class="service-select-card${cardSelectedClass}" for="svc-${svc.id}" data-service-id="${svc.id}" data-price="${svc.price}" data-name="${escapeHtml(svc.name)}">
-            <input type="checkbox" id="svc-${svc.id}" name="services" value="${svc.id}" class="service-checkbox sr-only" data-price="${svc.price}" data-name="${escapeHtml(svc.name)}"${checkedAttr} />
+          <label class="service-select-card${cardSelectedClass}" for="svc-${svc.id}" data-service-id="${svc.id}" data-price="${payablePrice}" data-name="${escapeHtml(svc.name)}">
+            <input type="checkbox" id="svc-${svc.id}" name="services" value="${svc.id}" class="service-checkbox sr-only" data-price="${payablePrice}" data-name="${escapeHtml(svc.name)}"${checkedAttr} />
             <div class="service-card-box">
               <div class="service-card-check" aria-hidden="true">
                 <span data-lucide="check" class="icon-check"></span>
@@ -617,7 +626,7 @@ function initBookingForm() {
                 <div class="service-card-header">
                   <span class="service-card-name" id="svc-${svc.id}-name">${escapeHtml(svc.name)}</span>
                   <span class="service-card-price" id="svc-${svc.id}-price">
-                    ${discountHtml}₹${svc.price}
+                    ${priceDisplay}
                   </span>
                 </div>
                 ${descHtml}
@@ -633,6 +642,92 @@ function initBookingForm() {
           </label>
         `;
       }).join('');
+
+      // 2. Synchronize Transparent Pricing Catalogue (#price-grid)
+      const priceGrid = document.getElementById('price-grid');
+      if (priceGrid) {
+        const categories = {};
+        data.services.forEach(s => {
+          const cat = s.category || 'Hair & Grooming';
+          if (!categories[cat]) categories[cat] = [];
+          categories[cat].push(s);
+        });
+
+        const categoryIconMap = {
+          'Hair & Grooming': 'scissors',
+          'Skin Care': 'sparkles',
+          'Combos': 'layers',
+          'Special Treatments': 'gem'
+        };
+
+        const categorySlugMap = {
+          'Hair & Grooming': 'hair',
+          'Skin Care': 'skin',
+          'Combos': 'combos',
+          'Special Treatments': 'treatments'
+        };
+
+        priceGrid.innerHTML = Object.entries(categories).map(([catName, items]) => {
+          const icon = categoryIconMap[catName] || 'sparkles';
+          const catSlug = categorySlugMap[catName] || 'all';
+
+          const itemsHtml = items.map(item => {
+            const payable = (item.discount_price && item.discount_price > 0 && item.discount_price < item.price)
+              ? item.discount_price
+              : (item.payable_price || item.price);
+            const hasDisc = payable < item.price;
+            const priceHtml = hasDisc
+              ? `<span style="text-decoration:line-through; font-size:12px; color:var(--clr-text-muted); margin-right:4px;">₹${item.price}</span><span style="color:var(--clr-gold); font-weight:700;">₹${payable}</span>`
+              : `<span style="font-weight:700;">₹${item.price}</span>`;
+
+            return `
+              <li class="price-item">
+                <span class="price-item-name">${escapeHtml(item.name)}</span>
+                <span class="price-item-dots" aria-hidden="true"></span>
+                <span class="price-item-amount" aria-label="₹${payable}">${priceHtml}</span>
+              </li>
+            `;
+          }).join('');
+
+          return `
+            <div class="price-category-card reveal-fade-up is-visible" data-category="${catSlug}">
+              <div class="price-cat-header">
+                <span data-lucide="${icon}" class="icon-md price-cat-icon" aria-hidden="true"></span>
+                <h3 class="price-cat-title">${escapeHtml(catName)}</h3>
+              </div>
+              <ul class="price-list-items" role="list">
+                ${itemsHtml}
+              </ul>
+            </div>
+          `;
+        }).join('');
+
+        initPriceFilter();
+      }
+
+      // 3. Synchronize Services Showcase cards (.services-section .service-card)
+      data.services.forEach(svc => {
+        const payable = (svc.discount_price && svc.discount_price > 0 && svc.discount_price < svc.price)
+          ? svc.discount_price
+          : (svc.payable_price || svc.price);
+
+        const cards = qsa('.services-section .service-card');
+        cards.forEach(card => {
+          const titleEl = card.querySelector('.service-card-title');
+          if (titleEl && titleEl.textContent.trim().toLowerCase() === svc.name.toLowerCase()) {
+            const badge = card.querySelector('.service-card-price-badge');
+            const footerPrice = card.querySelector('.service-price');
+            const hasDisc = payable < svc.price;
+
+            const display = hasDisc
+              ? `<span style="text-decoration:line-through; font-size:12px; opacity:0.7; margin-right:4px;">₹${svc.price}</span>₹${payable}`
+              : `₹${svc.price}`;
+
+            if (badge) badge.innerHTML = display;
+            if (footerPrice) footerPrice.innerHTML = display;
+          }
+        });
+      });
 
       initIcons();
       bindCheckboxListeners();

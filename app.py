@@ -588,13 +588,20 @@ def resolve_and_validate_services(service_input):
         )
 
     validated_list = list(resolved_map.values())
-    total_price = sum(s["price"] for s in validated_list)
+    for s in validated_list:
+        disc = s.get("discount_price")
+        if disc is not None and isinstance(disc, (int, float)) and 0 < disc < s["price"]:
+            s["payable_price"] = int(disc)
+        else:
+            s["payable_price"] = int(s["price"])
+
+    total_price = sum(s["payable_price"] for s in validated_list)
     total_duration = sum(s["duration"] for s in validated_list)
     # Ensure minimum appointment duration
     if total_duration < SERVICE_DURATION_MINUTES:
         total_duration = SERVICE_DURATION_MINUTES
 
-    display_parts = [f"{s['name']} (₹{s['price']})" for s in validated_list]
+    display_parts = [f"{s['name']} (₹{s['payable_price']})" for s in validated_list]
     display_string = ", ".join(display_parts)
 
     return validated_list, total_price, total_duration, display_string
@@ -1587,7 +1594,7 @@ def create_booking_record(data):
     first_reminder_date = add_months_safe(apt_date_obj, 1).strftime("%Y-%m-%d")
 
     unsub_token = secrets.token_urlsafe(24)
-    services_json = json.dumps([{"id": s["id"], "name": s["name"], "price": s["price"]} for s in validated_services])
+    services_json = json.dumps([{"id": s["id"], "name": s["name"], "price": s.get("payable_price", s["price"])} for s in validated_services])
 
     with sqlite3.connect(DB_PATH) as conn:
         now_iso = now_local_iso()
@@ -1889,9 +1896,18 @@ def api_services():
                 "SELECT * FROM services WHERE is_active = 1 AND is_archived = 0 ORDER BY display_order ASC, name ASC"
             ).fetchall()
             if rows:
+                services_list = []
+                for r in rows:
+                    item = dict(r)
+                    disc = item.get("discount_price")
+                    if disc is not None and isinstance(disc, (int, float)) and 0 < disc < item["price"]:
+                        item["payable_price"] = int(disc)
+                    else:
+                        item["payable_price"] = int(item["price"])
+                    services_list.append(item)
                 return jsonify({
                     "success": True,
-                    "services": [dict(r) for r in rows],
+                    "services": services_list,
                 }), 200
     except Exception as exc:
         app.logger.warning("Error loading services from database: %s", exc)
@@ -1901,6 +1917,8 @@ def api_services():
             "id": s["id"],
             "name": s["name"],
             "price": s["price"],
+            "discount_price": s.get("discount_price"),
+            "payable_price": s["price"],
             "duration": s["duration"],
             "description": s["description"],
             "category": s.get("category", "Hair & Grooming"),
@@ -2407,27 +2425,53 @@ def api_admin_resend_email(appointment_id):
 
 
 # =============================================================================
-# ADMIN SERVICES CRUD & BULK PRICING APIS
+# ADMIN SERVICES & PRICE LIST CRUD APIS
 # =============================================================================
 @app.route("/api/admin/services", methods=["GET"])
 @admin_required
 def api_admin_services_list():
+    include_archived = request.args.get("include_archived", "true").lower() in ("true", "1")
     with sqlite3.connect(DB_PATH) as conn:
         conn.row_factory = sqlite3.Row
-        rows = conn.execute(
-            "SELECT * FROM services WHERE is_archived = 0 ORDER BY display_order ASC, name ASC"
-        ).fetchall()
-    return jsonify({"success": True, "services": [dict(r) for r in rows]}), 200
+        if include_archived:
+            rows = conn.execute(
+                "SELECT * FROM services ORDER BY is_archived ASC, display_order ASC, name ASC"
+            ).fetchall()
+        else:
+            rows = conn.execute(
+                "SELECT * FROM services WHERE is_archived = 0 ORDER BY display_order ASC, name ASC"
+            ).fetchall()
+
+        services_data = []
+        for r in rows:
+            svc_dict = dict(r)
+            # Count historical appointments referencing this service
+            apt_count = conn.execute(
+                "SELECT COUNT(*) FROM appointments WHERE service LIKE ? OR services_json LIKE ?",
+                (f"%{svc_dict['name']}%", f"%{svc_dict['id']}%")
+            ).fetchone()[0]
+            svc_dict["appointment_count"] = apt_count
+
+            # Calculate payable price
+            disc = svc_dict.get("discount_price")
+            if disc is not None and isinstance(disc, (int, float)) and 0 < disc < svc_dict["price"]:
+                svc_dict["payable_price"] = int(disc)
+            else:
+                svc_dict["payable_price"] = int(svc_dict["price"])
+
+            services_data.append(svc_dict)
+
+    return jsonify({"success": True, "services": services_data}), 200
 
 
 @app.route("/api/admin/services", methods=["POST"])
 @admin_required
 def api_admin_create_service():
     payload = request.get_json(silent=True) or {}
-    slug = (payload.get("id") or "").strip().lower()
     name = (payload.get("name") or "").strip()
-    price = payload.get("price")
-    discount_price = payload.get("discount_price")
+    raw_slug = (payload.get("id") or "").strip().lower()
+    raw_price = payload.get("price")
+    raw_discount = payload.get("discount_price")
     duration = payload.get("duration_minutes") or 30
     category = (payload.get("category") or "Hair & Grooming").strip()
     description = (payload.get("description") or "").strip()
@@ -2435,24 +2479,78 @@ def api_admin_create_service():
     display_order = payload.get("display_order") or 0
     is_active = 1 if payload.get("is_active", 1) else 0
 
-    if not slug or not name or price is None:
-        return jsonify({"success": False, "error": "Service ID (slug), Name, and Price are required."}), 400
+    if not name:
+        return jsonify({"success": False, "error": "Service Name is required."}), 400
+
+    if raw_price is None or raw_price == "":
+        return jsonify({"success": False, "error": "Regular Price (₹) is required."}), 400
+
+    try:
+        price = int(raw_price)
+        if price < 0:
+            return jsonify({"success": False, "error": "Regular Price cannot be negative."}), 400
+    except (ValueError, TypeError):
+        return jsonify({"success": False, "error": "Regular Price must be a valid number."}), 400
+
+    parsed_discount = None
+    if raw_discount not in (None, "", "null"):
+        try:
+            parsed_discount = int(raw_discount)
+            if parsed_discount < 0:
+                return jsonify({"success": False, "error": "Discount Price cannot be negative."}), 400
+            if parsed_discount >= price:
+                return jsonify({
+                    "success": False,
+                    "error": f"Discount Price (₹{parsed_discount}) must be strictly less than Regular Price (₹{price})."
+                }), 400
+        except (ValueError, TypeError):
+            return jsonify({"success": False, "error": "Discount Price must be a valid number."}), 400
+
+    try:
+        duration = int(duration)
+        if duration < 5:
+            duration = 15
+    except (ValueError, TypeError):
+        duration = 30
+
+    # Auto generate clean slug if omitted
+    slug = raw_slug
+    if not slug:
+        slug = re.sub(r"[^a-z0-9]+", "_", name.lower()).strip("_")
+        if not slug:
+            slug = f"service_{int(time.time())}"
 
     now_iso = now_local_iso()
     try:
         with sqlite3.connect(DB_PATH) as conn:
             conn.execute(
                 """
-                INSERT INTO services (id, name, price, discount_price, duration_minutes, category, description, image_url, is_active, display_order, is_archived, created_at, updated_at)
+                INSERT INTO services (
+                    id, name, price, discount_price, duration_minutes,
+                    category, description, image_url, is_active,
+                    display_order, is_archived, created_at, updated_at
+                )
                 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 0, ?, ?)
                 """,
-                (slug, name, int(price), int(discount_price) if discount_price else None, int(duration), category, description, image_url, is_active, int(display_order), now_iso, now_iso),
+                (slug, name, price, parsed_discount, duration, category, description, image_url, is_active, int(display_order), now_iso, now_iso),
             )
             conn.commit()
-        log_activity("create_service", f"Created new service '{name}' (₹{price})")
-        return jsonify({"success": True, "message": f"Service '{name}' created successfully."}), 201
+        log_activity("create_service", f"Created service '{name}' (#{slug}) at ₹{price}")
+        return jsonify({
+            "success": True,
+            "message": f"Service '{name}' added to price catalogue successfully.",
+            "service": {
+                "id": slug,
+                "name": name,
+                "price": price,
+                "discount_price": parsed_discount,
+                "duration_minutes": duration,
+                "category": category,
+                "is_active": is_active,
+            }
+        }), 201
     except sqlite3.IntegrityError:
-        return jsonify({"success": False, "error": f"A service with slug '{slug}' already exists."}), 400
+        return jsonify({"success": False, "error": f"A service with slug/ID '{slug}' already exists."}), 400
 
 
 @app.route("/api/admin/services/<service_id>", methods=["PUT"])
@@ -2466,48 +2564,138 @@ def api_admin_update_service(service_id):
             return jsonify({"success": False, "error": "Service not found."}), 404
 
         name = payload.get("name", existing["name"]).strip()
-        price = payload.get("price", existing["price"])
-        discount_price = payload.get("discount_price") if "discount_price" in payload else existing["discount_price"]
-        duration = payload.get("duration_minutes", existing["duration_minutes"])
+        if not name:
+            return jsonify({"success": False, "error": "Service Name cannot be empty."}), 400
+
+        raw_price = payload.get("price", existing["price"])
+        try:
+            price = int(raw_price)
+            if price < 0:
+                return jsonify({"success": False, "error": "Regular Price cannot be negative."}), 400
+        except (ValueError, TypeError):
+            return jsonify({"success": False, "error": "Regular Price must be a valid number."}), 400
+
+        # Handle discount price: update, add, or remove (if null or empty string passed)
+        if "discount_price" in payload:
+            raw_discount = payload.get("discount_price")
+            if raw_discount in (None, "", "null"):
+                discount_price = None
+            else:
+                try:
+                    discount_price = int(raw_discount)
+                    if discount_price < 0:
+                        return jsonify({"success": False, "error": "Discount Price cannot be negative."}), 400
+                    if discount_price >= price:
+                        return jsonify({
+                            "success": False,
+                            "error": f"Discount Price (₹{discount_price}) must be strictly less than Regular Price (₹{price})."
+                        }), 400
+                except (ValueError, TypeError):
+                    return jsonify({"success": False, "error": "Discount Price must be a valid number."}), 400
+        else:
+            discount_price = existing["discount_price"]
+
+        duration = int(payload.get("duration_minutes", existing["duration_minutes"]))
         category = payload.get("category", existing["category"])
         description = payload.get("description", existing["description"])
         image_url = payload.get("image_url", existing["image_url"])
-        display_order = payload.get("display_order", existing["display_order"])
-        is_active = payload.get("is_active", existing["is_active"])
+        display_order = int(payload.get("display_order", existing["display_order"]))
+        is_active = int(payload.get("is_active", existing["is_active"]))
+        is_archived = int(payload.get("is_archived", existing["is_archived"]))
 
         now_iso = now_local_iso()
         conn.execute(
             """
             UPDATE services
-            SET name = ?, price = ?, discount_price = ?, duration_minutes = ?, category = ?, description = ?, image_url = ?, is_active = ?, display_order = ?, updated_at = ?
+            SET name = ?, price = ?, discount_price = ?, duration_minutes = ?,
+                category = ?, description = ?, image_url = ?, is_active = ?,
+                display_order = ?, is_archived = ?, updated_at = ?
             WHERE id = ?
             """,
-            (name, int(price), int(discount_price) if discount_price else None, int(duration), category, description, image_url, int(is_active), int(display_order), now_iso, service_id),
+            (name, price, discount_price, duration, category, description, image_url, is_active, display_order, is_archived, now_iso, service_id),
         )
         conn.commit()
 
-    log_activity("update_service", f"Updated service '{name}' (#{service_id})")
-    return jsonify({"success": True, "message": "Service updated successfully."}), 200
+    log_activity("update_service", f"Updated price/details for '{name}' (#{service_id})")
+    return jsonify({
+        "success": True,
+        "message": f"Service '{name}' and price updated successfully."
+    }), 200
+
+
+@app.route("/api/admin/services/<service_id>/restore", methods=["POST"])
+@admin_required
+def api_admin_restore_service(service_id):
+    now_iso = now_local_iso()
+    with sqlite3.connect(DB_PATH) as conn:
+        conn.row_factory = sqlite3.Row
+        existing = conn.execute("SELECT * FROM services WHERE id = ?", (service_id,)).fetchone()
+        if not existing:
+            return jsonify({"success": False, "error": "Service not found."}), 404
+
+        conn.execute(
+            "UPDATE services SET is_archived = 0, is_active = 1, updated_at = ? WHERE id = ?",
+            (now_iso, service_id),
+        )
+        conn.commit()
+
+    log_activity("restore_service", f"Restored service '{existing['name']}' (#{service_id}) to active catalogue")
+    return jsonify({
+        "success": True,
+        "message": f"Service '{existing['name']}' has been restored to active catalogue."
+    }), 200
 
 
 @app.route("/api/admin/services/<service_id>", methods=["DELETE"])
 @admin_required
 def api_admin_delete_service(service_id):
-    permanent = request.args.get("permanent") == "true"
+    permanent_requested = request.args.get("permanent") == "true"
     now_iso = now_local_iso()
     with sqlite3.connect(DB_PATH) as conn:
-        if permanent:
-            conn.execute("DELETE FROM services WHERE id = ?", (service_id,))
-            msg = "Service permanently removed from catalogue."
-            act = "delete_service_permanent"
-        else:
-            conn.execute("UPDATE services SET is_archived = 1, is_active = 0, updated_at = ? WHERE id = ?", (now_iso, service_id))
-            msg = "Service archived from public booking."
+        conn.row_factory = sqlite3.Row
+        existing = conn.execute("SELECT * FROM services WHERE id = ?", (service_id,)).fetchone()
+        if not existing:
+            return jsonify({"success": False, "error": "Service not found."}), 404
+
+        # Check if service is referenced by any existing appointments
+        apt_count = conn.execute(
+            "SELECT COUNT(*) FROM appointments WHERE service LIKE ? OR services_json LIKE ?",
+            (f"%{existing['name']}%", f"%{service_id}%")
+        ).fetchone()[0]
+
+        if apt_count > 0 and permanent_requested:
+            # Enforce soft-deletion/archiving to protect historical revenue and customer booking details!
+            conn.execute(
+                "UPDATE services SET is_archived = 1, is_active = 0, updated_at = ? WHERE id = ?",
+                (now_iso, service_id)
+            )
+            conn.commit()
+            msg = f"Service '{existing['name']}' is linked to {apt_count} historical appointment(s). To preserve confirmed prices and booking history, it was safely ARCHIVED instead of permanently deleted."
             act = "archive_service"
-        conn.commit()
+            is_archived = True
+        elif permanent_requested:
+            conn.execute("DELETE FROM services WHERE id = ?", (service_id,))
+            conn.commit()
+            msg = f"Service '{existing['name']}' was permanently removed from catalogue."
+            act = "delete_service_permanent"
+            is_archived = False
+        else:
+            conn.execute(
+                "UPDATE services SET is_archived = 1, is_active = 0, updated_at = ? WHERE id = ?",
+                (now_iso, service_id)
+            )
+            conn.commit()
+            msg = f"Service '{existing['name']}' has been archived from public booking."
+            act = "archive_service"
+            is_archived = True
 
     log_activity(act, f"Service '{service_id}': {msg}")
-    return jsonify({"success": True, "message": msg}), 200
+    return jsonify({
+        "success": True,
+        "message": msg,
+        "archived": is_archived,
+        "appointment_count": apt_count
+    }), 200
 
 
 @app.route("/api/admin/services/bulk-prices", methods=["POST"])
@@ -2515,18 +2703,46 @@ def api_admin_delete_service(service_id):
 def api_admin_bulk_update_prices():
     payload = request.get_json(silent=True) or {}
     updates = payload.get("updates") or []
-    if not isinstance(updates, list):
-        return jsonify({"success": False, "error": "Updates must be a list of service objects."}), 400
+    if not isinstance(updates, list) or len(updates) == 0:
+        return jsonify({"success": False, "error": "Updates must be a non-empty list of service items."}), 400
 
     now_iso = now_local_iso()
+    # Pre-validation loop: check for negative prices or invalid discounts
+    for u in updates:
+        s_id = u.get("id")
+        price = u.get("price")
+        discount = u.get("discount_price")
+        if not s_id:
+            return jsonify({"success": False, "error": "Each item must have a valid service ID."}), 400
+        if price is None or price == "":
+            return jsonify({"success": False, "error": f"Regular Price is required for service '{s_id}'."}), 400
+        try:
+            price_int = int(price)
+            if price_int < 0:
+                return jsonify({"success": False, "error": f"Regular Price for '{s_id}' cannot be negative (got ₹{price_int})."}), 400
+        except (ValueError, TypeError):
+            return jsonify({"success": False, "error": f"Invalid price format for service '{s_id}'."}), 400
+
+        if discount not in (None, "", "null"):
+            try:
+                disc_int = int(discount)
+                if disc_int < 0:
+                    return jsonify({"success": False, "error": f"Discount Price for '{s_id}' cannot be negative."}), 400
+                if disc_int >= price_int:
+                    return jsonify({
+                        "success": False,
+                        "error": f"Discount Price (₹{disc_int}) must be less than Regular Price (₹{price_int}) for service '{s_id}'."
+                    }), 400
+            except (ValueError, TypeError):
+                return jsonify({"success": False, "error": f"Invalid discount format for service '{s_id}'."}), 400
+
     with sqlite3.connect(DB_PATH) as conn:
         for u in updates:
             s_id = u.get("id")
-            if not s_id:
-                continue
-            price = u.get("price")
-            discount = u.get("discount_price")
-            order = u.get("display_order") or 0
+            price = int(u.get("price"))
+            disc_val = u.get("discount_price")
+            discount = int(disc_val) if disc_val not in (None, "", "null") else None
+            order = int(u.get("display_order") or 0)
             is_active = 1 if u.get("is_active") else 0
             conn.execute(
                 """
@@ -2534,12 +2750,15 @@ def api_admin_bulk_update_prices():
                 SET price = ?, discount_price = ?, display_order = ?, is_active = ?, updated_at = ?
                 WHERE id = ?
                 """,
-                (int(price) if price is not None else 0, int(discount) if discount else None, int(order), is_active, now_iso, s_id),
+                (price, discount, order, is_active, now_iso, s_id),
             )
         conn.commit()
 
-    log_activity("bulk_price_update", f"Bulk updated pricing for {len(updates)} services")
-    return jsonify({"success": True, "message": f"Successfully updated pricing for {len(updates)} services."}), 200
+    log_activity("bulk_price_update", f"Bulk updated prices and visibility for {len(updates)} services")
+    return jsonify({
+        "success": True,
+        "message": f"Successfully synchronized prices for {len(updates)} services across the website."
+    }), 200
 
 
 # =============================================================================

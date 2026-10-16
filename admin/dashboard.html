@@ -358,52 +358,107 @@
         </section>
 
         <!-- ═════════════════════════════════════════════════════════
-             TAB 4: PRICE LIST & BULK UPDATE
+             TAB 4: PRICE LIST & SERVICE CATALOGUE
              ═════════════════════════════════════════════════════════ -->
         <section class="tab-pane" id="pane-prices">
           <div class="table-card">
-            <div class="table-header-bar">
+            <div class="table-header-bar" style="flex-wrap: wrap; gap: 14px;">
               <div>
-                <h3 class="table-title">Price List &amp; Bulk Pricing Manager</h3>
+                <div style="display: flex; align-items: center; gap: 10px;">
+                  <h3 class="table-title">Price List &amp; Service Catalogue</h3>
+                  <span class="badge badge-active" id="prices-count-badge">0 Services</span>
+                </div>
                 <p style="font-size: 12px; color: var(--clr-text-muted); margin-top: 2px;">
-                  Update regular prices, promotional discounts, and active visibility for multiple services in one session.
+                  Single source of truth for service prices, promotional discounts, and live public website synchronization.
                 </p>
               </div>
-              <div class="table-actions">
-                <div class="search-box">
-                  <span data-lucide="search"></span>
-                  <input type="text" id="bulk-prices-search" placeholder="Filter service name..." />
-                </div>
-                <select id="bulk-prices-category-filter" class="form-control" style="width: 150px; padding: 7px 10px; font-size: 13px;">
-                  <option value="">All Categories</option>
-                  <option value="Hair & Grooming">Hair &amp; Grooming</option>
-                  <option value="Skin Care">Skin Care</option>
-                  <option value="Combos">Combos</option>
-                  <option value="Special Treatments">Special Treatments</option>
-                </select>
-                <button type="button" class="btn btn-primary" id="save-bulk-prices-btn">
+              <div class="table-actions" style="display: flex; gap: 8px; align-items: center;">
+                <button type="button" class="btn btn-primary btn-sm" id="price-list-add-btn">
+                  <span data-lucide="plus" style="width: 14px; height: 14px;"></span>
+                  Add New Service
+                </button>
+                <button type="button" class="btn btn-secondary btn-sm" id="toggle-bulk-mode-btn" title="Toggle between standard CRUD view and inline bulk editor">
+                  <span data-lucide="sliders" style="width: 14px; height: 14px;"></span>
+                  <span id="bulk-toggle-label">Quick Bulk Editor</span>
+                </button>
+                <button type="button" class="btn btn-primary btn-sm" id="save-bulk-prices-btn" style="display: none;">
                   <span data-lucide="save" style="width: 14px; height: 14px;"></span>
                   Save All Price Changes
                 </button>
               </div>
             </div>
 
-            <div class="table-responsive">
+            <!-- Price List Filters & Search Toolbar -->
+            <div class="table-toolbar" style="padding: 12px 16px; border-bottom: 1px solid var(--clr-border); display: flex; flex-wrap: wrap; gap: 10px; align-items: center; justify-content: space-between; background: rgba(255,255,255,0.015);">
+              <div style="display: flex; flex-wrap: wrap; gap: 10px; align-items: center; flex: 1;">
+                <div class="search-box" style="min-width: 200px; flex: 1; max-width: 320px;">
+                  <span data-lucide="search"></span>
+                  <input type="text" id="prices-search" placeholder="Search service name or slug..." />
+                </div>
+                <select id="prices-category-filter" class="form-control" style="width: 155px; padding: 7px 10px; font-size: 13px;">
+                  <option value="">All Categories</option>
+                  <option value="Hair & Grooming">Hair &amp; Grooming</option>
+                  <option value="Skin Care">Skin Care</option>
+                  <option value="Combos">Combos</option>
+                  <option value="Special Treatments">Special Treatments</option>
+                </select>
+                <select id="prices-status-filter" class="form-control" style="width: 135px; padding: 7px 10px; font-size: 13px;">
+                  <option value="">All Statuses</option>
+                  <option value="active">Active Only</option>
+                  <option value="inactive">Inactive Only</option>
+                  <option value="archived">Archived</option>
+                </select>
+                <select id="prices-sort" class="form-control" style="width: 165px; padding: 7px 10px; font-size: 13px;">
+                  <option value="price-asc">Price: Low to High</option>
+                  <option value="price-desc">Price: High to Low</option>
+                  <option value="name-asc">Service Name: A to Z</option>
+                  <option value="name-desc">Service Name: Z to A</option>
+                  <option value="order-asc">Display Order</option>
+                </select>
+              </div>
+            </div>
+
+            <!-- Mode 1: Standard Responsive Price List Table -->
+            <div class="table-responsive" id="standard-prices-wrapper">
+              <table class="data-table" id="prices-table">
+                <thead>
+                  <tr>
+                    <th>Service</th>
+                    <th style="text-align: right; width: 140px;">Regular Price</th>
+                    <th style="text-align: right; width: 150px;">Discount Price</th>
+                    <th style="text-align: center; width: 120px;">Status</th>
+                    <th style="text-align: center; width: 190px;">Actions</th>
+                  </tr>
+                </thead>
+                <tbody id="prices-tbody">
+                  <tr><td colspan="5" style="text-align: center; color: var(--clr-text-muted); padding: 30px;">Loading price catalogue...</td></tr>
+                </tbody>
+              </table>
+            </div>
+
+            <!-- Mode 2: Bulk Inline Editor Table -->
+            <div class="table-responsive" id="bulk-prices-wrapper" style="display: none;">
               <table class="data-table" id="bulk-prices-table">
                 <thead>
                   <tr>
-                    <th>Service Name</th>
+                    <th>Service</th>
                     <th>Category</th>
-                    <th>Regular Price (₹)</th>
-                    <th>Promo Discount Price (₹)</th>
-                    <th>Display Order</th>
-                    <th>Visibility</th>
+                    <th style="width: 140px;">Regular Price (₹)</th>
+                    <th style="width: 150px;">Promo Discount (₹)</th>
+                    <th style="width: 110px;">Display Order</th>
+                    <th style="width: 100px; text-align: center;">Visibility</th>
                   </tr>
                 </thead>
                 <tbody id="bulk-prices-tbody">
-                  <tr><td colspan="6" style="text-align: center; color: var(--clr-text-muted); padding: 30px;">Loading pricing catalogue...</td></tr>
+                  <tr><td colspan="6" style="text-align: center; color: var(--clr-text-muted); padding: 30px;">Loading bulk pricing editor...</td></tr>
                 </tbody>
               </table>
+            </div>
+
+            <!-- Price List Pagination Bar -->
+            <div class="pagination-bar" id="prices-pagination-bar">
+              <div class="pagination-info" id="prices-pagination-info">Showing 0 of 0 services</div>
+              <div class="pagination-controls" id="prices-pagination-controls"></div>
             </div>
           </div>
         </section>
@@ -953,6 +1008,43 @@
       <div class="modal-footer" style="border-top: 1px solid rgba(255,255,255,0.08); justify-content: space-between;">
         <span id="lightbox-info" style="font-size: 12px; color: var(--clr-text-muted);"></span>
         <button type="button" class="btn btn-secondary btn-sm" data-close-modal>Close Preview</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 7. VIEW SERVICE & PRICE DETAILS MODAL -->
+  <div class="modal-backdrop" id="modal-view-service">
+    <div class="modal-dialog" style="max-width: 540px;">
+      <div class="modal-header">
+        <h3 class="modal-title" id="view-svc-title">Service Details</h3>
+        <button type="button" class="modal-close" data-close-modal>&times;</button>
+      </div>
+      <div class="modal-body" id="view-svc-body">
+        <!-- Rendered via JS -->
+      </div>
+      <div class="modal-footer" style="justify-content: space-between;">
+        <button type="button" class="btn btn-secondary" data-close-modal>Close</button>
+        <button type="button" class="btn btn-primary" id="view-svc-edit-btn">
+          <span data-lucide="edit-3" style="width: 14px; height: 14px;"></span>
+          Edit Service &amp; Prices
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 8. DELETE / ARCHIVE CONFIRMATION MODAL -->
+  <div class="modal-backdrop" id="modal-confirm-delete-service">
+    <div class="modal-dialog" style="max-width: 480px;">
+      <div class="modal-header">
+        <h3 class="modal-title" id="confirm-del-title">Delete or Archive Service</h3>
+        <button type="button" class="modal-close" data-close-modal>&times;</button>
+      </div>
+      <div class="modal-body" id="confirm-del-body">
+        <!-- Rendered via JS -->
+      </div>
+      <div class="modal-footer" id="confirm-del-footer">
+        <button type="button" class="btn btn-secondary" data-close-modal>Cancel</button>
+        <button type="button" class="btn btn-danger" id="confirm-del-action-btn">Confirm Action</button>
       </div>
     </div>
   </div>
