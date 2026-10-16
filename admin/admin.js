@@ -142,11 +142,14 @@ document.addEventListener('DOMContentLoaded', () => {
     item.addEventListener('click', () => switchTab(item.dataset.tab));
   });
 
-  // Mobile menu toggle
+  // Sidebar Controls (Mobile Drawer & Desktop Collapsible)
   const mobileToggleBtn = document.getElementById('mobile-toggle-btn');
+  const desktopSidebarToggleBtn = document.getElementById('desktop-sidebar-toggle-btn');
   const sidebarEl = document.getElementById('app-sidebar');
   const mobileOverlay = document.getElementById('mobile-overlay');
+  const mainEl = document.querySelector('.app-main');
 
+  // Mobile Drawer Toggle
   if (mobileToggleBtn && sidebarEl && mobileOverlay) {
     mobileToggleBtn.addEventListener('click', () => {
       const isOpen = sidebarEl.classList.toggle('mobile-open');
@@ -157,6 +160,56 @@ document.addEventListener('DOMContentLoaded', () => {
       mobileOverlay.style.display = 'none';
     });
   }
+
+  // Desktop Sidebar Collapse Toggle
+  const applySidebarCollapse = (collapsed) => {
+    if (!sidebarEl || !mainEl) return;
+    sidebarEl.classList.toggle('collapsed', collapsed);
+    mainEl.classList.toggle('sidebar-collapsed', collapsed);
+    localStorage.setItem('sridevi_admin_sidebar_collapsed', collapsed ? 'true' : 'false');
+    const toggleIcon = document.getElementById('sidebar-toggle-icon');
+    if (toggleIcon) {
+      toggleIcon.setAttribute('data-lucide', collapsed ? 'panel-left-open' : 'panel-left-close');
+      if (window.lucide) lucide.createIcons();
+    }
+  };
+
+  const isCollapsedInitial = localStorage.getItem('sridevi_admin_sidebar_collapsed') === 'true';
+  if (isCollapsedInitial && window.innerWidth >= 1024) {
+    applySidebarCollapse(true);
+  }
+
+  if (desktopSidebarToggleBtn) {
+    desktopSidebarToggleBtn.addEventListener('click', () => {
+      const isCurrentlyCollapsed = sidebarEl.classList.contains('collapsed');
+      applySidebarCollapse(!isCurrentlyCollapsed);
+    });
+  }
+
+  // Keyboard shortcut: Escape closes mobile drawer or active modals
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape') {
+      if (sidebarEl && sidebarEl.classList.contains('mobile-open')) {
+        sidebarEl.classList.remove('mobile-open');
+        if (mobileOverlay) mobileOverlay.style.display = 'none';
+      }
+      document.querySelectorAll('.modal-backdrop.active').forEach((modal) => {
+        modal.classList.remove('active');
+      });
+    }
+  });
+
+  // Global Image Lightbox Previewer
+  window.previewFullImage = (url, title = 'Salon Image Preview') => {
+    if (!url) return;
+    const lightboxImg = document.getElementById('lightbox-img');
+    const lightboxTitle = document.getElementById('lightbox-title');
+    const lightboxInfo = document.getElementById('lightbox-info');
+    if (lightboxImg) lightboxImg.src = url;
+    if (lightboxTitle) lightboxTitle.textContent = title;
+    if (lightboxInfo) lightboxInfo.textContent = url.split('/').pop() || '';
+    openModal('modal-view-image');
+  };
 
   // Quick Action Buttons
   const qaMap = {
@@ -323,8 +376,44 @@ document.addEventListener('DOMContentLoaded', () => {
   };
 
   // ══════════════════════════════════════════════════════════════════
-  // 6. APPOINTMENTS MANAGEMENT
+  // 6. APPOINTMENTS MANAGEMENT (FULL CRUD & PAGINATION)
   // ══════════════════════════════════════════════════════════════════
+  let appointmentsPage = 1;
+  const appointmentsPerPage = 10;
+  let appointmentsSort = 'date-desc';
+
+  // Format 24-hour time to 12-hour AM/PM
+  const format12Hour = (time24) => {
+    if (!time24) return '--:--';
+    const parts = time24.split(':');
+    if (parts.length < 2) return time24;
+    let h = parseInt(parts[0], 10);
+    const m = parts[1];
+    const ampm = h >= 12 ? 'PM' : 'AM';
+    h = h % 12;
+    if (h === 0) h = 12;
+    return `${h}:${m} ${ampm}`;
+  };
+
+  const sortAppointmentsList = (list, sortMode) => {
+    const arr = [...list];
+    if (sortMode === 'date-desc') {
+      arr.sort((a, b) => (b.appointment_date + ' ' + (b.appointment_time || '')).localeCompare(a.appointment_date + ' ' + (a.appointment_time || '')));
+    } else if (sortMode === 'date-asc') {
+      arr.sort((a, b) => (a.appointment_date + ' ' + (a.appointment_time || '')).localeCompare(b.appointment_date + ' ' + (b.appointment_time || '')));
+    } else if (sortMode === 'name-asc') {
+      arr.sort((a, b) => (a.name || '').localeCompare(b.name || ''));
+    } else if (sortMode === 'price-desc') {
+      arr.sort((a, b) => (b.total_price || 0) - (a.total_price || 0));
+    }
+    return arr;
+  };
+
+  window.changeAppointmentsPage = (page) => {
+    appointmentsPage = page;
+    renderAppointments(allAppointments);
+  };
+
   const loadAppointments = async () => {
     try {
       const search = document.getElementById('appointment-search')?.value.trim() || '';
@@ -341,6 +430,7 @@ document.addEventListener('DOMContentLoaded', () => {
       if (!data.success) throw new Error(data.error);
 
       allAppointments = data.appointments || [];
+      appointmentsPage = 1;
       renderAppointments(allAppointments);
     } catch (err) {
       console.error('Error fetching appointments:', err);
@@ -350,14 +440,49 @@ document.addEventListener('DOMContentLoaded', () => {
 
   const renderAppointments = (items) => {
     const tbody = document.getElementById('appointments-tbody');
+    const paginationInfo = document.getElementById('appointments-pagination-info');
+    const paginationControls = document.getElementById('appointments-pagination-controls');
     if (!tbody) return;
 
     if (!items.length) {
       tbody.innerHTML = `<tr><td colspan="9" style="text-align:center; color:var(--clr-text-muted); padding:30px;">No appointments matching the selected filters.</td></tr>`;
+      if (paginationInfo) paginationInfo.textContent = 'Showing 0 of 0 appointments';
+      if (paginationControls) paginationControls.innerHTML = '';
       return;
     }
 
-    tbody.innerHTML = items
+    const sorted = sortAppointmentsList(items, appointmentsSort);
+    const totalItems = sorted.length;
+    const totalPages = Math.ceil(totalItems / appointmentsPerPage) || 1;
+    if (appointmentsPage > totalPages) appointmentsPage = totalPages;
+    if (appointmentsPage < 1) appointmentsPage = 1;
+
+    const startIndex = (appointmentsPage - 1) * appointmentsPerPage;
+    const endIndex = Math.min(startIndex + appointmentsPerPage, totalItems);
+    const pagedItems = sorted.slice(startIndex, endIndex);
+
+    if (paginationInfo) {
+      paginationInfo.textContent = `Showing ${startIndex + 1}–${endIndex} of ${totalItems} appointments (Page ${appointmentsPage} of ${totalPages})`;
+    }
+
+    if (paginationControls) {
+      let btns = `
+        <button type="button" class="page-btn" ${appointmentsPage === 1 ? 'disabled' : ''} onclick="window.changeAppointmentsPage(${appointmentsPage - 1})">Prev</button>
+      `;
+      for (let p = 1; p <= totalPages; p++) {
+        if (p === 1 || p === totalPages || (p >= appointmentsPage - 1 && p <= appointmentsPage + 1)) {
+          btns += `<button type="button" class="page-btn ${p === appointmentsPage ? 'active' : ''}" onclick="window.changeAppointmentsPage(${p})">${p}</button>`;
+        } else if (p === appointmentsPage - 2 || p === appointmentsPage + 2) {
+          btns += `<span style="padding:0 3px; color:var(--clr-text-muted);">…</span>`;
+        }
+      }
+      btns += `
+        <button type="button" class="page-btn" ${appointmentsPage === totalPages ? 'disabled' : ''} onclick="window.changeAppointmentsPage(${appointmentsPage + 1})">Next</button>
+      `;
+      paginationControls.innerHTML = btns;
+    }
+
+    tbody.innerHTML = pagedItems
       .map((item) => {
         let servicesLabel = item.service || '';
         try {
@@ -380,6 +505,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
         const confDelivery = item.conf_delivery || 'sent';
         const followDelivery = item.followup_delivery || 'scheduled';
+        const displayTime = format12Hour(item.appointment_time);
 
         return `
           <tr>
@@ -391,13 +517,13 @@ document.addEventListener('DOMContentLoaded', () => {
               <div>${escapeHtml(item.phone || '—')}</div>
               <div style="font-size:11px; color:var(--clr-text-muted);">${escapeHtml(item.email)}</div>
             </td>
-            <td style="max-width:220px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;" title="${escapeHtml(servicesLabel)}">
+            <td style="max-width:200px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;" title="${escapeHtml(servicesLabel)}">
               ${escapeHtml(servicesLabel)}
             </td>
             <td style="color:var(--clr-gold); font-weight:700;">${formatINR(item.total_price)}</td>
             <td>
-              <div style="font-weight:500;">${item.appointment_date}</div>
-              <div style="font-size:11px; color:var(--clr-text-muted);">${item.appointment_time}</div>
+              <div style="font-weight:600;">${item.appointment_date}</div>
+              <div style="font-size:11px; color:var(--clr-gold-light); font-weight:500;">${displayTime}</div>
             </td>
             <td><span class="badge ${statusClass}">${item.status}</span></td>
             <td>
@@ -411,10 +537,13 @@ document.addEventListener('DOMContentLoaded', () => {
                 <button type="button" class="btn btn-secondary btn-sm" onclick="window.viewAppointmentDetails(${item.id})" title="View Details">
                   <span data-lucide="eye" style="width:13px; height:13px;"></span>
                 </button>
-                <button type="button" class="btn btn-secondary btn-sm" onclick="window.openRescheduleModal(${item.id})" title="Reschedule">
+                <button type="button" class="btn btn-secondary btn-sm" onclick="window.openEditCustomerModal(${item.id})" title="Edit Customer Details">
+                  <span data-lucide="user-check" style="width:13px; height:13px; color:#10b981;"></span>
+                </button>
+                <button type="button" class="btn btn-secondary btn-sm" onclick="window.openRescheduleModal(${item.id})" title="Reschedule Date & Time">
                   <span data-lucide="calendar" style="width:13px; height:13px; color:#60a5fa;"></span>
                 </button>
-                <button type="button" class="btn btn-secondary btn-sm" onclick="window.updateAppointmentStatusPrompt(${item.id}, '${item.status}')" title="Change Status">
+                <button type="button" class="btn btn-secondary btn-sm" onclick="window.updateAppointmentStatusPrompt(${item.id}, '${item.status}')" title="Change Booking Status">
                   <span data-lucide="edit-2" style="width:13px; height:13px; color:var(--clr-gold);"></span>
                 </button>
               </div>
@@ -431,6 +560,61 @@ document.addEventListener('DOMContentLoaded', () => {
   document.getElementById('appointment-search')?.addEventListener('input', debounce(loadAppointments, 350));
   document.getElementById('appointment-status-filter')?.addEventListener('change', loadAppointments);
   document.getElementById('appointment-date-filter')?.addEventListener('change', loadAppointments);
+  document.getElementById('appointment-sort')?.addEventListener('change', (e) => {
+    appointmentsSort = e.target.value;
+    appointmentsPage = 1;
+    renderAppointments(allAppointments);
+  });
+
+  // Edit Customer Details Modal
+  window.openEditCustomerModal = (id) => {
+    const apt = allAppointments.find((a) => a.id === id);
+    if (!apt) return;
+
+    document.getElementById('edit-apt-id').textContent = apt.id;
+    document.getElementById('edit-apt-hidden-id').value = apt.id;
+    document.getElementById('edit-apt-name').value = apt.name || '';
+    document.getElementById('edit-apt-phone').value = apt.phone || '';
+    document.getElementById('edit-apt-email').value = apt.email || '';
+    document.getElementById('edit-apt-notes').value = apt.notes || '';
+
+    openModal('modal-edit-appointment');
+  };
+
+  document.getElementById('edit-appointment-form')?.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const saveBtn = document.getElementById('edit-apt-save-btn');
+    const id = document.getElementById('edit-apt-hidden-id').value;
+    const name = document.getElementById('edit-apt-name').value.trim();
+    const phone = document.getElementById('edit-apt-phone').value.trim();
+    const email = document.getElementById('edit-apt-email').value.trim();
+    const notes = document.getElementById('edit-apt-notes').value.trim();
+
+    try {
+      if (saveBtn) {
+        saveBtn.disabled = true;
+        saveBtn.textContent = 'Saving Changes...';
+      }
+      const res = await fetch(`/api/admin/appointments/${id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name, phone, email, notes }),
+      });
+      const data = await res.json();
+      if (!data.success) throw new Error(data.error);
+
+      showToast('Customer contact details updated successfully!');
+      closeModal('modal-edit-appointment');
+      loadAppointments();
+    } catch (err) {
+      showToast(err.message || 'Update failed', 'danger');
+    } finally {
+      if (saveBtn) {
+        saveBtn.disabled = false;
+        saveBtn.textContent = 'Save Customer Details';
+      }
+    }
+  });
 
   // View Details Modal
   window.viewAppointmentDetails = async (id) => {
@@ -483,13 +667,20 @@ document.addEventListener('DOMContentLoaded', () => {
         logsHtml = '<div style="font-size:12px; color:var(--clr-text-muted);">No notification logs recorded yet.</div>';
       }
 
+      const formattedTime = format12Hour(apt.appointment_time);
       const bodyEl = document.getElementById('dtl-apt-body');
       bodyEl.innerHTML = `
-        <div style="display:grid; grid-template-columns:1fr 1fr; gap:16px; margin-bottom:18px;">
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:16px; background:rgba(197,160,89,0.08); padding:10px 14px; border-radius:var(--radius-sm); border:1px solid var(--clr-border-gold);">
           <div>
-            <span style="font-size:11px; text-transform:uppercase; color:var(--clr-text-muted); font-weight:700;">Customer Name</span>
+            <span style="font-size:11px; text-transform:uppercase; color:var(--clr-gold); font-weight:700;">Customer Details</span>
             <div style="font-size:15px; font-weight:700; color:#fff;">${escapeHtml(apt.name)}</div>
           </div>
+          <button type="button" class="btn btn-secondary btn-sm" onclick="closeModal('modal-appointment-details'); window.openEditCustomerModal(${apt.id});">
+            <span data-lucide="edit-3" style="width:13px; height:13px;"></span> Edit Customer Info
+          </button>
+        </div>
+
+        <div style="display:grid; grid-template-columns:1fr 1fr; gap:16px; margin-bottom:18px;">
           <div>
             <span style="font-size:11px; text-transform:uppercase; color:var(--clr-text-muted); font-weight:700;">Booking Status</span>
             <div><span class="badge badge-active">${apt.status.toUpperCase()}</span></div>
@@ -503,8 +694,8 @@ document.addEventListener('DOMContentLoaded', () => {
             <div style="color:#fff;">${escapeHtml(apt.email)}</div>
           </div>
           <div>
-            <span style="font-size:11px; text-transform:uppercase; color:var(--clr-text-muted); font-weight:700;">Appointment Date & Time</span>
-            <div style="color:#fff; font-weight:600;">${apt.appointment_date} at ${apt.appointment_time}</div>
+            <span style="font-size:11px; text-transform:uppercase; color:var(--clr-text-muted); font-weight:700;">Date & Time (12-Hour)</span>
+            <div style="color:#fff; font-weight:600;">${apt.appointment_date} at <span style="color:var(--clr-gold-light);">${formattedTime}</span></div>
           </div>
           <div>
             <span style="font-size:11px; text-transform:uppercase; color:var(--clr-text-muted); font-weight:700;">Calculated Duration</span>
@@ -588,7 +779,8 @@ document.addEventListener('DOMContentLoaded', () => {
   // Change status prompt
   window.updateAppointmentStatusPrompt = (id, currentStatus) => {
     const newStatus = prompt(
-      `Update status for Appointment #${id}\nChoose: booked, confirmed, completed, cancelled`,
+      `Update status for Appointment #${id}
+Choose: booked, confirmed, completed, cancelled`,
       currentStatus
     );
     if (!newStatus || newStatus === currentStatus) return;
@@ -645,7 +837,7 @@ document.addEventListener('DOMContentLoaded', () => {
       return;
     }
 
-    const headers = ['ID', 'Customer Name', 'Email', 'Phone', 'Services', 'Total Price', 'Date', 'Time', 'Status'];
+    const headers = ['ID', 'Customer Name', 'Email', 'Phone', 'Services', 'Total Price', 'Date', 'Time (12-Hour)', 'Status'];
     const rows = allAppointments.map((a) => {
       let svc = a.service;
       try {
@@ -663,7 +855,7 @@ document.addEventListener('DOMContentLoaded', () => {
         `"${(svc || '').replace(/"/g, '""')}"`,
         a.total_price || 0,
         a.appointment_date,
-        a.appointment_time,
+        format12Hour(a.appointment_time),
         a.status,
       ].join(',');
     });
@@ -679,8 +871,17 @@ document.addEventListener('DOMContentLoaded', () => {
   });
 
   // ══════════════════════════════════════════════════════════════════
-  // 7. SERVICES MANAGEMENT (CRUD)
+  // 7. SERVICES MANAGEMENT (CRUD & PAGINATION)
   // ══════════════════════════════════════════════════════════════════
+  let servicesPage = 1;
+  const servicesPerPage = 8;
+  let servicesSearch = '';
+
+  window.changeServicesPage = (page) => {
+    servicesPage = page;
+    renderServices(allServices);
+  };
+
   const loadServices = async () => {
     try {
       const res = await fetch('/api/admin/services');
@@ -688,12 +889,11 @@ document.addEventListener('DOMContentLoaded', () => {
       if (!data.success) throw new Error(data.error);
 
       allServices = data.services || [];
-
-      // Update badge
       const badge = document.getElementById('services-count-badge');
       if (badge) badge.textContent = `${allServices.length} Services`;
 
       renderServices(allServices);
+      if (currentTab === 'prices') loadBulkPrices();
     } catch (err) {
       console.error('Error fetching services:', err);
       showToast('Failed to load services catalogue.', 'danger');
@@ -702,17 +902,59 @@ document.addEventListener('DOMContentLoaded', () => {
 
   const renderServices = (services) => {
     const tbody = document.getElementById('services-tbody');
+    const paginationInfo = document.getElementById('services-pagination-info');
+    const paginationControls = document.getElementById('services-pagination-controls');
     if (!tbody) return;
 
-    const catFilter = document.getElementById('services-category-filter')?.value;
-    const filtered = catFilter ? services.filter((s) => s.category === catFilter) : services;
+    const catFilter = document.getElementById('services-category-filter')?.value || '';
+    const searchFilter = (document.getElementById('services-search')?.value || '').trim().toLowerCase();
+
+    let filtered = services;
+    if (catFilter) {
+      filtered = filtered.filter((s) => s.category === catFilter);
+    }
+    if (searchFilter) {
+      filtered = filtered.filter((s) => (s.name || '').toLowerCase().includes(searchFilter) || (s.id || '').toLowerCase().includes(searchFilter));
+    }
 
     if (!filtered.length) {
-      tbody.innerHTML = `<tr><td colspan="9" style="text-align:center; color:var(--clr-text-muted); padding:30px;">No services found for this filter.</td></tr>`;
+      tbody.innerHTML = `<tr><td colspan="9" style="text-align:center; color:var(--clr-text-muted); padding:30px;">No services found matching filters.</td></tr>`;
+      if (paginationInfo) paginationInfo.textContent = 'Showing 0 of 0 services';
+      if (paginationControls) paginationControls.innerHTML = '';
       return;
     }
 
-    tbody.innerHTML = filtered
+    const totalItems = filtered.length;
+    const totalPages = Math.ceil(totalItems / servicesPerPage) || 1;
+    if (servicesPage > totalPages) servicesPage = totalPages;
+    if (servicesPage < 1) servicesPage = 1;
+
+    const startIndex = (servicesPage - 1) * servicesPerPage;
+    const endIndex = Math.min(startIndex + servicesPerPage, totalItems);
+    const pagedServices = filtered.slice(startIndex, endIndex);
+
+    if (paginationInfo) {
+      paginationInfo.textContent = `Showing ${startIndex + 1}–${endIndex} of ${totalItems} services (Page ${servicesPage} of ${totalPages})`;
+    }
+
+    if (paginationControls) {
+      let btns = `
+        <button type="button" class="page-btn" ${servicesPage === 1 ? 'disabled' : ''} onclick="window.changeServicesPage(${servicesPage - 1})">Prev</button>
+      `;
+      for (let p = 1; p <= totalPages; p++) {
+        if (p === 1 || p === totalPages || (p >= servicesPage - 1 && p <= servicesPage + 1)) {
+          btns += `<button type="button" class="page-btn ${p === servicesPage ? 'active' : ''}" onclick="window.changeServicesPage(${p})">${p}</button>`;
+        } else if (p === servicesPage - 2 || p === servicesPage + 2) {
+          btns += `<span style="padding:0 3px; color:var(--clr-text-muted);">…</span>`;
+        }
+      }
+      btns += `
+        <button type="button" class="page-btn" ${servicesPage === totalPages ? 'disabled' : ''} onclick="window.changeServicesPage(${servicesPage + 1})">Next</button>
+      `;
+      paginationControls.innerHTML = btns;
+    }
+
+    tbody.innerHTML = pagedServices
       .map((svc) => {
         const imgSrc = svc.image_url || '/assets/logo.png';
         const isAct = Boolean(svc.is_active);
@@ -720,7 +962,7 @@ document.addEventListener('DOMContentLoaded', () => {
         return `
           <tr>
             <td>
-              <img src="${escapeHtml(imgSrc)}" alt="${escapeHtml(svc.name)}" class="service-table-img" onerror="this.src='/assets/logo.png';" />
+              <img src="${escapeHtml(imgSrc)}" alt="${escapeHtml(svc.name)}" class="service-table-img" onclick="window.previewFullImage('${escapeHtml(imgSrc)}', '${escapeHtml(svc.name)}')" title="Click to view full image" onerror="this.src='/assets/logo.png';" />
             </td>
             <td>
               <div style="font-weight:700; color:#fff;">${escapeHtml(svc.name)}</div>
@@ -758,8 +1000,14 @@ document.addEventListener('DOMContentLoaded', () => {
   };
 
   document.getElementById('services-category-filter')?.addEventListener('change', () => {
+    servicesPage = 1;
     renderServices(allServices);
   });
+
+  document.getElementById('services-search')?.addEventListener('input', debounce(() => {
+    servicesPage = 1;
+    renderServices(allServices);
+  }, 300));
 
   const openAddServiceModal = () => {
     document.getElementById('service-modal-title').textContent = 'Add New Salon Service';
@@ -846,7 +1094,7 @@ document.addEventListener('DOMContentLoaded', () => {
   // Save Service (Create or Update)
   document.getElementById('service-form')?.addEventListener('submit', async (e) => {
     e.preventDefault();
-
+    const saveBtn = document.getElementById('svc-save-btn');
     const existingId = document.getElementById('svc-id').value.trim();
     const slug = document.getElementById('svc-slug').value.trim();
     const name = document.getElementById('svc-name').value.trim();
@@ -878,6 +1126,10 @@ document.addEventListener('DOMContentLoaded', () => {
     const method = isEdit ? 'PUT' : 'POST';
 
     try {
+      if (saveBtn) {
+        saveBtn.disabled = true;
+        saveBtn.textContent = 'Saving Service...';
+      }
       const res = await fetch(url, {
         method,
         headers: { 'Content-Type': 'application/json' },
@@ -892,6 +1144,11 @@ document.addEventListener('DOMContentLoaded', () => {
       loadDashboardStats();
     } catch (err) {
       showToast(err.message || 'Failed to save service', 'danger');
+    } finally {
+      if (saveBtn) {
+        saveBtn.disabled = false;
+        saveBtn.textContent = 'Save Service';
+      }
     }
   });
 
@@ -916,24 +1173,42 @@ document.addEventListener('DOMContentLoaded', () => {
 
   // Delete / Archive Service
   window.deleteService = async (id) => {
-    if (!confirm(`Are you sure you want to delete/archive service "${id}"? It will no longer appear on the website booking form.`)) return;
+    if (!confirm(`Are you sure you want to archive service "${id}"? It will be removed from public booking.`)) return;
 
     try {
       const res = await fetch(`/api/admin/services/${id}`, { method: 'DELETE' });
       const data = await res.json();
       if (!data.success) throw new Error(data.error);
 
-      showToast('Service removed from active catalogue.');
+      showToast('Service archived from active catalogue.');
       loadServices();
       loadDashboardStats();
     } catch (err) {
-      showToast(err.message || 'Delete failed', 'danger');
+      showToast(err.message || 'Archive failed', 'danger');
     }
   };
 
   // ══════════════════════════════════════════════════════════════════
-  // 8. PRICE LIST & BULK UPDATE
+  // 8. PRICE LIST & BULK UPDATE (FILTERING & MANAGEMENT)
   // ══════════════════════════════════════════════════════════════════
+  const filterBulkPrices = () => {
+    const q = (document.getElementById('bulk-prices-search')?.value || '').trim().toLowerCase();
+    const cat = document.getElementById('bulk-prices-category-filter')?.value || '';
+    const rows = document.querySelectorAll('#bulk-prices-tbody tr[data-service-id]');
+
+    rows.forEach((tr) => {
+      const name = (tr.querySelector('.bulk-name-label')?.textContent || '').toLowerCase();
+      const id = (tr.dataset.serviceId || '').toLowerCase();
+      const rowCat = tr.dataset.category || '';
+      const matchQ = !q || name.includes(q) || id.includes(q);
+      const matchCat = !cat || rowCat === cat;
+      tr.style.display = matchQ && matchCat ? '' : 'none';
+    });
+  };
+
+  document.getElementById('bulk-prices-search')?.addEventListener('input', debounce(filterBulkPrices, 200));
+  document.getElementById('bulk-prices-category-filter')?.addEventListener('change', filterBulkPrices);
+
   const loadBulkPrices = async () => {
     try {
       const res = await fetch('/api/admin/services');
@@ -947,9 +1222,9 @@ document.addEventListener('DOMContentLoaded', () => {
       tbody.innerHTML = services
         .map((s) => {
           return `
-          <tr data-service-id="${s.id}">
+          <tr data-service-id="${s.id}" data-category="${escapeHtml(s.category || 'Hair & Grooming')}">
             <td>
-              <div style="font-weight:700; color:#fff;">${escapeHtml(s.name)}</div>
+              <div class="bulk-name-label" style="font-weight:700; color:#fff;">${escapeHtml(s.name)}</div>
               <div style="font-size:11px; color:var(--clr-text-muted); font-family:monospace;">${escapeHtml(s.id)}</div>
             </td>
             <td><span class="badge badge-category">${escapeHtml(s.category || 'Hair & Grooming')}</span></td>
@@ -978,6 +1253,8 @@ document.addEventListener('DOMContentLoaded', () => {
         `;
         })
         .join('');
+
+      filterBulkPrices();
     } catch (err) {
       console.error('Error loading bulk prices:', err);
       showToast('Failed to load prices.', 'danger');
@@ -985,6 +1262,7 @@ document.addEventListener('DOMContentLoaded', () => {
   };
 
   document.getElementById('save-bulk-prices-btn')?.addEventListener('click', async () => {
+    const saveBtn = document.getElementById('save-bulk-prices-btn');
     const rows = document.querySelectorAll('#bulk-prices-tbody tr[data-service-id]');
     const updates = [];
 
@@ -1000,6 +1278,10 @@ document.addEventListener('DOMContentLoaded', () => {
     });
 
     try {
+      if (saveBtn) {
+        saveBtn.disabled = true;
+        saveBtn.textContent = 'Saving Changes...';
+      }
       showToast('Saving price updates...', 'info');
       const res = await fetch('/api/admin/services/bulk-prices', {
         method: 'POST',
@@ -1011,14 +1293,34 @@ document.addEventListener('DOMContentLoaded', () => {
 
       showToast('All service prices updated successfully!');
       loadBulkPrices();
+      loadServices();
     } catch (err) {
       showToast(err.message || 'Failed to save prices', 'danger');
+    } finally {
+      if (saveBtn) {
+        saveBtn.disabled = false;
+        saveBtn.textContent = 'Save All Price Changes';
+      }
     }
   });
 
   // ══════════════════════════════════════════════════════════════════
-  // 9. WEBSITE CONTENT CMS
+  // 9. WEBSITE CONTENT CMS (PREVIEWS & EDITING)
   // ══════════════════════════════════════════════════════════════════
+  const updateCMSPreviews = () => {
+    const logoVal = document.getElementById('cnt-logo_url')?.value.trim();
+    const ownerVal = document.getElementById('cnt-owner_photo_url')?.value.trim();
+
+    const logoImg = document.getElementById('logo-preview-img');
+    const ownerImg = document.getElementById('owner-preview-img');
+
+    if (logoImg && logoVal) logoImg.src = logoVal;
+    if (ownerImg && ownerVal) ownerImg.src = ownerVal;
+  };
+
+  document.getElementById('cnt-logo_url')?.addEventListener('input', updateCMSPreviews);
+  document.getElementById('cnt-owner_photo_url')?.addEventListener('input', updateCMSPreviews);
+
   const loadSiteContent = async () => {
     try {
       const res = await fetch('/api/admin/content');
@@ -1048,6 +1350,8 @@ document.addEventListener('DOMContentLoaded', () => {
           el.value = content[k];
         }
       });
+
+      updateCMSPreviews();
     } catch (err) {
       console.error('Error fetching site content:', err);
       showToast('Failed to load website content.', 'danger');
@@ -1055,6 +1359,7 @@ document.addEventListener('DOMContentLoaded', () => {
   };
 
   document.getElementById('save-content-btn')?.addEventListener('click', async () => {
+    const saveBtn = document.getElementById('save-content-btn');
     const fields = [
       'salon_name',
       'tagline',
@@ -1077,6 +1382,10 @@ document.addEventListener('DOMContentLoaded', () => {
     });
 
     try {
+      if (saveBtn) {
+        saveBtn.disabled = true;
+        saveBtn.textContent = 'Saving Changes...';
+      }
       showToast('Saving website changes...', 'info');
       const res = await fetch('/api/admin/content', {
         method: 'POST',
@@ -1087,8 +1396,14 @@ document.addEventListener('DOMContentLoaded', () => {
       if (!data.success) throw new Error(data.error);
 
       showToast('Website content saved and published!');
+      updateCMSPreviews();
     } catch (err) {
       showToast(err.message || 'Failed to save content', 'danger');
+    } finally {
+      if (saveBtn) {
+        saveBtn.disabled = false;
+        saveBtn.textContent = 'Save Website Changes';
+      }
     }
   });
 
@@ -1105,6 +1420,7 @@ document.addEventListener('DOMContentLoaded', () => {
       const data = await res.json();
       if (!data.success) throw new Error(data.error);
       document.getElementById('cnt-logo_url').value = data.url;
+      updateCMSPreviews();
       showToast('Logo uploaded successfully!');
     } catch (err) {
       showToast(err.message || 'Upload failed', 'danger');
@@ -1124,6 +1440,7 @@ document.addEventListener('DOMContentLoaded', () => {
       const data = await res.json();
       if (!data.success) throw new Error(data.error);
       document.getElementById('cnt-owner_photo_url').value = data.url;
+      updateCMSPreviews();
       showToast('Owner photo uploaded successfully!');
     } catch (err) {
       showToast(err.message || 'Upload failed', 'danger');
@@ -1131,36 +1448,41 @@ document.addEventListener('DOMContentLoaded', () => {
   });
 
   // ══════════════════════════════════════════════════════════════════
-  // 10. GALLERY & MEDIA MANAGEMENT
+  // 10. GALLERY & MEDIA MANAGEMENT (FULL CRUD & LIGHTBOX)
   // ══════════════════════════════════════════════════════════════════
+  let allGalleryImages = [];
+
   const loadGallery = async () => {
     try {
       const res = await fetch('/api/admin/gallery');
       const data = await res.json();
       if (!data.success) throw new Error(data.error);
 
-      const items = data.images || [];
+      allGalleryImages = data.images || [];
       const grid = document.getElementById('gallery-grid');
       if (!grid) return;
 
-      if (!items.length) {
+      if (!allGalleryImages.length) {
         grid.innerHTML = '<div style="color:var(--clr-text-muted); font-size:13px; grid-column:1/-1;">No photos in salon gallery yet. Upload one above!</div>';
         return;
       }
 
-      grid.innerHTML = items
+      grid.innerHTML = allGalleryImages
         .map((img) => {
           return `
           <div class="gallery-card">
-            <img src="${escapeHtml(img.image_url)}" alt="${escapeHtml(img.caption || 'Salon photo')}" class="gallery-card-img" />
+            <img src="${escapeHtml(img.image_url)}" alt="${escapeHtml(img.caption || 'Salon photo')}" class="gallery-card-img" onclick="window.previewFullImage('${escapeHtml(img.image_url)}', '${escapeHtml(img.caption || 'Salon Photo')}')" title="Click to view full photo" onerror="this.src='/assets/logo.png';" />
             <div class="gallery-card-body">
-              <div style="font-weight:600; color:#fff; font-size:13px; margin-bottom:4px;">${escapeHtml(img.caption || 'Salon Photo')}</div>
-              <div style="font-size:11px; color:var(--clr-text-muted); margin-bottom:8px;">Order: ${img.display_order || 0}</div>
-              <div style="display:flex; justify-content:space-between; align-items:center;">
-                <button type="button" class="btn btn-secondary btn-sm" onclick="window.copyImageLink('${escapeHtml(img.image_url)}')">
-                  <span data-lucide="copy" style="width:12px; height:12px;"></span> Copy Link
+              <div style="font-weight:600; color:#fff; font-size:13px; margin-bottom:4px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">${escapeHtml(img.caption || 'Salon Photo')}</div>
+              <div style="font-size:11px; color:var(--clr-text-muted); margin-bottom:10px;">Display Order: ${img.display_order || 0}</div>
+              <div style="display:flex; justify-content:space-between; align-items:center; gap:6px;">
+                <button type="button" class="btn btn-secondary btn-sm" onclick="window.copyImageLink('${escapeHtml(img.image_url)}')" title="Copy Link">
+                  <span data-lucide="copy" style="width:12px; height:12px;"></span>
                 </button>
-                <button type="button" class="btn btn-secondary btn-sm" onclick="window.deleteGalleryPhoto(${img.id})">
+                <button type="button" class="btn btn-secondary btn-sm" onclick="window.editGalleryPhoto(${img.id})" title="Edit Photo Details">
+                  <span data-lucide="edit" style="width:12px; height:12px; color:var(--clr-gold);"></span>
+                </button>
+                <button type="button" class="btn btn-secondary btn-sm" onclick="window.deleteGalleryPhoto(${img.id})" title="Delete Photo">
                   <span data-lucide="trash-2" style="width:12px; height:12px; color:#ef4444;"></span>
                 </button>
               </div>
@@ -1182,6 +1504,81 @@ document.addEventListener('DOMContentLoaded', () => {
     showToast('Image URL copied to clipboard!');
   };
 
+  // Edit Gallery Photo Modal
+  window.editGalleryPhoto = (id) => {
+    const photo = allGalleryImages.find((img) => img.id === id);
+    if (!photo) return;
+
+    document.getElementById('edit-gal-id').textContent = photo.id;
+    document.getElementById('edit-gal-hidden-id').value = photo.id;
+    document.getElementById('edit-gal-caption').value = photo.caption || '';
+    document.getElementById('edit-gal-order').value = photo.display_order || 0;
+    document.getElementById('edit-gal-url').value = photo.image_url || '';
+
+    const prev = document.getElementById('edit-gal-preview');
+    if (prev) prev.src = photo.image_url || '/assets/logo.png';
+
+    openModal('modal-edit-gallery');
+  };
+
+  // Replace photo file upload in Edit Gallery modal
+  document.getElementById('edit-gal-file')?.addEventListener('change', async (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+
+    const formData = new FormData();
+    formData.append('image', file);
+
+    try {
+      showToast('Uploading replacement photo...', 'info');
+      const res = await fetch('/api/admin/upload-image', { method: 'POST', body: formData });
+      const data = await res.json();
+      if (!data.success) throw new Error(data.error);
+
+      document.getElementById('edit-gal-url').value = data.url;
+      const prev = document.getElementById('edit-gal-preview');
+      if (prev) prev.src = data.url;
+      showToast('Replacement image ready.');
+    } catch (err) {
+      showToast(err.message || 'Image upload failed', 'danger');
+    }
+  });
+
+  // Save Edit Gallery Form
+  document.getElementById('edit-gallery-form')?.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const saveBtn = document.getElementById('edit-gal-save-btn');
+    const id = document.getElementById('edit-gal-hidden-id').value;
+    const caption = document.getElementById('edit-gal-caption').value.trim();
+    const order = Number(document.getElementById('edit-gal-order').value) || 0;
+    const image_url = document.getElementById('edit-gal-url').value.trim();
+
+    try {
+      if (saveBtn) {
+        saveBtn.disabled = true;
+        saveBtn.textContent = 'Updating...';
+      }
+      const res = await fetch(`/api/admin/gallery/${id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ caption, display_order: order, image_url }),
+      });
+      const data = await res.json();
+      if (!data.success) throw new Error(data.error);
+
+      showToast('Gallery photo updated successfully!');
+      closeModal('modal-edit-gallery');
+      loadGallery();
+    } catch (err) {
+      showToast(err.message || 'Update failed', 'danger');
+    } finally {
+      if (saveBtn) {
+        saveBtn.disabled = false;
+        saveBtn.textContent = 'Update Photo';
+      }
+    }
+  });
+
   window.deleteGalleryPhoto = async (id) => {
     if (!confirm('Are you sure you want to delete this photo from the gallery?')) return;
     try {
@@ -1197,6 +1594,7 @@ document.addEventListener('DOMContentLoaded', () => {
   };
 
   document.getElementById('upload-gallery-btn')?.addEventListener('click', async () => {
+    const uploadBtn = document.getElementById('upload-gallery-btn');
     const fileInput = document.getElementById('gallery-file-input');
     const caption = document.getElementById('gallery-caption-input')?.value.trim();
     const order = Number(document.getElementById('gallery-order-input')?.value) || 0;
@@ -1211,6 +1609,10 @@ document.addEventListener('DOMContentLoaded', () => {
     formData.append('image', file);
 
     try {
+      if (uploadBtn) {
+        uploadBtn.disabled = true;
+        uploadBtn.textContent = 'Uploading...';
+      }
       showToast('Uploading photo...', 'info');
       const uploadRes = await fetch('/api/admin/upload-image', { method: 'POST', body: formData });
       const uploadData = await uploadRes.json();
@@ -1235,6 +1637,11 @@ document.addEventListener('DOMContentLoaded', () => {
       loadGallery();
     } catch (err) {
       showToast(err.message || 'Gallery upload failed', 'danger');
+    } finally {
+      if (uploadBtn) {
+        uploadBtn.disabled = false;
+        uploadBtn.textContent = 'Upload to Gallery';
+      }
     }
   });
 

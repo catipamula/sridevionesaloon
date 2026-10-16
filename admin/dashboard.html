@@ -91,6 +91,9 @@
           <button type="button" class="mobile-toggle" id="mobile-toggle-btn" aria-label="Toggle navigation">
             <span data-lucide="menu"></span>
           </button>
+          <button type="button" class="desktop-sidebar-toggle" id="desktop-sidebar-toggle-btn" aria-label="Toggle sidebar collapse" title="Collapse / Expand Sidebar">
+            <span data-lucide="panel-left-close" id="sidebar-toggle-icon"></span>
+          </button>
           <h2 class="topbar-title" id="page-heading">Dashboard Overview</h2>
         </div>
 
@@ -254,6 +257,12 @@
                   <option value="cancelled">Cancelled</option>
                 </select>
                 <input type="date" id="appointment-date-filter" class="form-control" style="width: 150px; padding: 7px 10px; font-size: 13px;" />
+                <select id="appointment-sort" class="form-control" style="width: 150px; padding: 7px 10px; font-size: 13px;">
+                  <option value="date-desc">Newest First</option>
+                  <option value="date-asc">Oldest First</option>
+                  <option value="name-asc">Customer A-Z</option>
+                  <option value="price-desc">Price: High to Low</option>
+                </select>
                 <button type="button" class="btn btn-secondary btn-sm" id="export-appointments-csv" title="Export current list to CSV">
                   <span data-lucide="download" style="width: 14px; height: 14px;"></span>
                   Export
@@ -281,6 +290,12 @@
                 </tbody>
               </table>
             </div>
+
+            <!-- Appointments Pagination Bar -->
+            <div class="pagination-bar" id="appointments-pagination-bar">
+              <div class="pagination-info" id="appointments-pagination-info">Showing 0 of 0 appointments</div>
+              <div class="pagination-controls" id="appointments-pagination-controls"></div>
+            </div>
           </div>
         </section>
 
@@ -295,11 +310,16 @@
                 <span class="badge badge-active" id="services-count-badge">0 Services</span>
               </div>
               <div class="table-actions">
+                <div class="search-box">
+                  <span data-lucide="search"></span>
+                  <input type="text" id="services-search" placeholder="Search service name..." />
+                </div>
                 <select id="services-category-filter" class="form-control" style="width: 160px; padding: 7px 10px; font-size: 13px;">
                   <option value="">All Categories</option>
                   <option value="Hair & Grooming">Hair &amp; Grooming</option>
                   <option value="Skin Care">Skin Care</option>
                   <option value="Combos">Combos</option>
+                  <option value="Special Treatments">Special Treatments</option>
                 </select>
                 <button type="button" class="btn btn-primary btn-sm" id="open-add-service-modal">
                   <span data-lucide="plus" style="width: 14px; height: 14px;"></span>
@@ -312,7 +332,7 @@
               <table class="data-table">
                 <thead>
                   <tr>
-                    <th style="width: 60px;">Image</th>
+                    <th style="width: 110px;">Image</th>
                     <th>Service Name</th>
                     <th>Category</th>
                     <th>Duration</th>
@@ -327,6 +347,12 @@
                   <tr><td colspan="9" style="text-align: center; color: var(--clr-text-muted); padding: 30px;">Loading services...</td></tr>
                 </tbody>
               </table>
+            </div>
+
+            <!-- Services Pagination Bar -->
+            <div class="pagination-bar" id="services-pagination-bar">
+              <div class="pagination-info" id="services-pagination-info">Showing 0 of 0 services</div>
+              <div class="pagination-controls" id="services-pagination-controls"></div>
             </div>
           </div>
         </section>
@@ -344,6 +370,17 @@
                 </p>
               </div>
               <div class="table-actions">
+                <div class="search-box">
+                  <span data-lucide="search"></span>
+                  <input type="text" id="bulk-prices-search" placeholder="Filter service name..." />
+                </div>
+                <select id="bulk-prices-category-filter" class="form-control" style="width: 150px; padding: 7px 10px; font-size: 13px;">
+                  <option value="">All Categories</option>
+                  <option value="Hair & Grooming">Hair &amp; Grooming</option>
+                  <option value="Skin Care">Skin Care</option>
+                  <option value="Combos">Combos</option>
+                  <option value="Special Treatments">Special Treatments</option>
+                </select>
                 <button type="button" class="btn btn-primary" id="save-bulk-prices-btn">
                   <span data-lucide="save" style="width: 14px; height: 14px;"></span>
                   Save All Price Changes
@@ -448,6 +485,10 @@
                     Upload <input type="file" id="upload-logo-file" accept="image/*" style="display: none;" />
                   </label>
                 </div>
+                <div id="logo-preview-box" class="image-preview-wrapper" style="margin-top: 10px;">
+                  <img id="logo-preview-img" src="/assets/logo.png" alt="Salon Logo Preview" class="cms-logo-preview" onclick="window.previewFullImage(this.src, 'Salon Logo')" title="Click to view full image" onerror="this.src='/assets/logo.png';" />
+                  <span style="font-size: 11px; color: var(--clr-text-muted);">Aspect-ratio preserved (Click to expand)</span>
+                </div>
               </div>
 
               <div class="form-group">
@@ -457,6 +498,10 @@
                   <label class="btn btn-secondary btn-sm" style="flex-shrink: 0; cursor: pointer;">
                     Upload <input type="file" id="upload-owner-file" accept="image/*" style="display: none;" />
                   </label>
+                </div>
+                <div id="owner-preview-box" class="image-preview-wrapper" style="margin-top: 10px;">
+                  <img id="owner-preview-img" src="/assets/pavan_dad.png" alt="Owner Photo Preview" class="cms-owner-preview" onclick="window.previewFullImage(this.src, 'Salon Owner Photo')" title="Click to view full image" onerror="this.src='/assets/pavan_dad.png';" />
+                  <span style="font-size: 11px; color: var(--clr-text-muted);">Circular avatar (72-100px square · Click to expand)</span>
                 </div>
               </div>
             </form>
@@ -815,6 +860,100 @@
           <button type="submit" class="btn btn-primary" id="svc-save-btn">Save Service</button>
         </div>
       </form>
+    </div>
+  </div>
+
+  <!-- 4. EDIT APPOINTMENT DETAILS MODAL -->
+  <div class="modal-backdrop" id="modal-edit-appointment">
+    <div class="modal-dialog" style="max-width: 500px;">
+      <div class="modal-header">
+        <h3 class="modal-title">Edit Customer Details #<span id="edit-apt-id"></span></h3>
+        <button type="button" class="modal-close" data-close-modal>&times;</button>
+      </div>
+      <form id="edit-appointment-form">
+        <input type="hidden" id="edit-apt-hidden-id" />
+        <div class="modal-body" style="display: flex; flex-direction: column; gap: 14px;">
+          <p style="font-size: 12px; color: var(--clr-text-muted);">
+            Update customer contact details. Service selections and pricing remain preserved for financial accuracy.
+          </p>
+          <div class="form-group">
+            <label class="form-label">Customer Full Name *</label>
+            <input type="text" id="edit-apt-name" class="form-control" required />
+          </div>
+          <div class="form-group">
+            <label class="form-label">Phone Number *</label>
+            <input type="tel" id="edit-apt-phone" class="form-control" placeholder="+91 98765 43210" required />
+          </div>
+          <div class="form-group">
+            <label class="form-label">Email Address *</label>
+            <input type="email" id="edit-apt-email" class="form-control" placeholder="customer@example.com" required />
+          </div>
+          <div class="form-group">
+            <label class="form-label">Customer Notes / Special Requests</label>
+            <textarea id="edit-apt-notes" class="form-control" rows="3" placeholder="Styling preferences, allergy alerts, etc."></textarea>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-close-modal>Cancel</button>
+          <button type="submit" class="btn btn-primary" id="edit-apt-save-btn">Save Customer Details</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- 5. EDIT GALLERY PHOTO MODAL -->
+  <div class="modal-backdrop" id="modal-edit-gallery">
+    <div class="modal-dialog" style="max-width: 480px;">
+      <div class="modal-header">
+        <h3 class="modal-title">Edit Gallery Photo #<span id="edit-gal-id"></span></h3>
+        <button type="button" class="modal-close" data-close-modal>&times;</button>
+      </div>
+      <form id="edit-gallery-form">
+        <input type="hidden" id="edit-gal-hidden-id" />
+        <div class="modal-body" style="display: flex; flex-direction: column; gap: 14px;">
+          <div style="text-align: center; margin-bottom: 6px;">
+            <img id="edit-gal-preview" src="" alt="Photo Preview" class="gallery-preview-thumbnail" style="max-height: 120px; border-radius: 6px; border: 1px solid var(--clr-border);" />
+          </div>
+          <div class="form-group">
+            <label class="form-label">Photo Caption / Description</label>
+            <input type="text" id="edit-gal-caption" class="form-control" placeholder="e.g. Modern Barber Chairs" required />
+          </div>
+          <div class="form-group">
+            <label class="form-label">Display Order</label>
+            <input type="number" id="edit-gal-order" class="form-control" value="0" />
+          </div>
+          <div class="form-group">
+            <label class="form-label">Replace Image (Optional)</label>
+            <div style="display: flex; gap: 8px;">
+              <input type="text" id="edit-gal-url" class="form-control" placeholder="Image URL or upload replacement" />
+              <label class="btn btn-secondary btn-sm" style="flex-shrink: 0; cursor: pointer;">
+                Browse <input type="file" id="edit-gal-file" accept="image/*" style="display: none;" />
+              </label>
+            </div>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-close-modal>Cancel</button>
+          <button type="submit" class="btn btn-primary" id="edit-gal-save-btn">Update Photo</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- 6. FULL-RES IMAGE LIGHTBOX MODAL -->
+  <div class="modal-backdrop" id="modal-view-image" style="z-index: 1200;">
+    <div class="modal-dialog modal-dialog-image" style="max-width: 90vw; background: rgba(16, 20, 28, 0.96); border: 1px solid var(--clr-border);">
+      <div class="modal-header" style="border-bottom: 1px solid rgba(255,255,255,0.08);">
+        <h3 class="modal-title" id="lightbox-title">Image Full Preview</h3>
+        <button type="button" class="modal-close" data-close-modal>&times;</button>
+      </div>
+      <div class="modal-body" style="display: flex; align-items: center; justify-content: center; padding: 18px; overflow: hidden;">
+        <img id="lightbox-img" src="" alt="Full Preview" style="max-width: 100%; max-height: 75vh; object-fit: contain; border-radius: 6px; box-shadow: 0 10px 30px rgba(0,0,0,0.8);" />
+      </div>
+      <div class="modal-footer" style="border-top: 1px solid rgba(255,255,255,0.08); justify-content: space-between;">
+        <span id="lightbox-info" style="font-size: 12px; color: var(--clr-text-muted);"></span>
+        <button type="button" class="btn btn-secondary btn-sm" data-close-modal>Close Preview</button>
+      </div>
     </div>
   </div>
 

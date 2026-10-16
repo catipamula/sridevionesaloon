@@ -2243,6 +2243,39 @@ def api_admin_appointment_detail(appointment_id):
     }), 200
 
 
+@app.route("/api/admin/appointments/<int:appointment_id>", methods=["PUT"])
+@admin_required
+def api_admin_update_appointment_customer(appointment_id):
+    appointment = get_appointment(appointment_id)
+    if not appointment:
+        return jsonify({"success": False, "error": "Appointment not found."}), 404
+
+    payload = request.get_json(silent=True) or {}
+    name = (payload.get("name") or appointment["name"]).strip()
+    email = (payload.get("email") or appointment["email"]).strip()
+    phone = (payload.get("phone") or appointment.get("phone", "")).strip()
+    notes = payload.get("notes") if "notes" in payload else appointment.get("notes", "")
+
+    now_iso = now_local_iso()
+    with sqlite3.connect(DB_PATH) as conn:
+        conn.execute(
+            """
+            UPDATE appointments
+            SET name = ?, email = ?, phone = ?, notes = ?, updated_at = ?
+            WHERE id = ?
+            """,
+            (name, email, phone, notes, now_iso, appointment_id),
+        )
+        conn.commit()
+
+    log_activity("update_appointment_details", f"Updated customer contact details for appointment #{appointment_id} ({name})")
+    return jsonify({
+        "success": True,
+        "message": "Customer details updated successfully.",
+        "appointment": get_appointment(appointment_id),
+    }), 200
+
+
 @app.route("/api/admin/appointments/<int:appointment_id>/status", methods=["POST"])
 @admin_required
 def api_admin_update_appointment_status(appointment_id):
@@ -2460,13 +2493,21 @@ def api_admin_update_service(service_id):
 @app.route("/api/admin/services/<service_id>", methods=["DELETE"])
 @admin_required
 def api_admin_delete_service(service_id):
+    permanent = request.args.get("permanent") == "true"
     now_iso = now_local_iso()
     with sqlite3.connect(DB_PATH) as conn:
-        conn.execute("UPDATE services SET is_archived = 1, is_active = 0, updated_at = ? WHERE id = ?", (now_iso, service_id))
+        if permanent:
+            conn.execute("DELETE FROM services WHERE id = ?", (service_id,))
+            msg = "Service permanently removed from catalogue."
+            act = "delete_service_permanent"
+        else:
+            conn.execute("UPDATE services SET is_archived = 1, is_active = 0, updated_at = ? WHERE id = ?", (now_iso, service_id))
+            msg = "Service archived from public booking."
+            act = "archive_service"
         conn.commit()
 
-    log_activity("archive_service", f"Archived service '{service_id}'")
-    return jsonify({"success": True, "message": "Service archived from public booking."}), 200
+    log_activity(act, f"Service '{service_id}': {msg}")
+    return jsonify({"success": True, "message": msg}), 200
 
 
 @app.route("/api/admin/services/bulk-prices", methods=["POST"])
@@ -2584,6 +2625,33 @@ def api_admin_add_gallery():
 
     log_activity("add_gallery_image", f"Added new gallery image: {caption or image_url}")
     return jsonify({"success": True, "id": new_id, "message": "Image added to gallery."}), 201
+
+
+@app.route("/api/admin/gallery/<int:image_id>", methods=["PUT"])
+@admin_required
+def api_admin_update_gallery(image_id):
+    payload = request.get_json(silent=True) or {}
+    caption = (payload.get("caption") or "").strip()
+    order = payload.get("display_order")
+    image_url = (payload.get("image_url") or "").strip()
+
+    with sqlite3.connect(DB_PATH) as conn:
+        conn.row_factory = sqlite3.Row
+        existing = conn.execute("SELECT * FROM gallery_images WHERE id = ?", (image_id,)).fetchone()
+        if not existing:
+            return jsonify({"success": False, "error": "Gallery image not found."}), 404
+
+        final_url = image_url if image_url else existing["image_url"]
+        final_order = int(order) if order is not None else existing["display_order"]
+
+        conn.execute(
+            "UPDATE gallery_images SET caption = ?, display_order = ?, image_url = ? WHERE id = ?",
+            (caption, final_order, final_url, image_id),
+        )
+        conn.commit()
+
+    log_activity("update_gallery_image", f"Updated gallery image #{image_id} ({caption or final_url})")
+    return jsonify({"success": True, "message": "Gallery image updated successfully."}), 200
 
 
 @app.route("/api/admin/gallery/<int:image_id>", methods=["DELETE"])
