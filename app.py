@@ -381,6 +381,11 @@ def init_db():
                 name TEXT NOT NULL,
                 price INTEGER NOT NULL,
                 discount_price INTEGER,
+                discount_enabled INTEGER NOT NULL DEFAULT 0,
+                discount_type TEXT NOT NULL DEFAULT 'percentage',
+                discount_value REAL NOT NULL DEFAULT 0,
+                discount_start_date TEXT,
+                discount_end_date TEXT,
                 duration_minutes INTEGER NOT NULL DEFAULT 30,
                 category TEXT NOT NULL DEFAULT 'Hair & Grooming',
                 description TEXT,
@@ -393,6 +398,20 @@ def init_db():
             )
             """
         )
+
+        # Migration: ensure discount columns exist on existing databases
+        cursor_svc = conn.execute("PRAGMA table_info(services);")
+        svc_cols = {col[1] for col in cursor_svc.fetchall()}
+        svc_col_defs = {
+            "discount_enabled": "INTEGER NOT NULL DEFAULT 0",
+            "discount_type": "TEXT NOT NULL DEFAULT 'percentage'",
+            "discount_value": "REAL NOT NULL DEFAULT 0",
+            "discount_start_date": "TEXT",
+            "discount_end_date": "TEXT",
+        }
+        for c_name, c_type in svc_col_defs.items():
+            if c_name not in svc_cols:
+                conn.execute(f"ALTER TABLE services ADD COLUMN {c_name} {c_type};")
 
         conn.execute(
             """
@@ -505,8 +524,90 @@ def format_display_date(date_str: str) -> str:
 
 
 # =============================================================================
-# SERVICE VALIDATION & TOTAL CALCULATION (Never trust browser-provided totals)
+# SERVICE PRICING, VALIDATION & TOTAL CALCULATION (Single Source of Truth)
 # =============================================================================
+def compute_service_pricing(svc: dict, ref_date: str = None) -> dict:
+    """
+    Computes effective pricing and promotional discount status for a service.
+    This serves as the authoritative single source of truth for pricing calculations
+    across the entire website, public API, admin dashboard, and booking checkout.
+    """
+    try:
+        price = int(svc.get("price") or 0)
+    except (ValueError, TypeError):
+        price = 0
+
+    disc_enabled = bool(int(svc.get("discount_enabled") or 0))
+    disc_type = str(svc.get("discount_type") or "percentage").strip().lower()
+    if disc_type not in ("percentage", "fixed"):
+        disc_type = "percentage"
+
+    try:
+        disc_val = float(svc.get("discount_value") or 0)
+    except (ValueError, TypeError):
+        disc_val = 0.0
+
+    start_date = svc.get("discount_start_date") or None
+    end_date = svc.get("discount_end_date") or None
+    if isinstance(start_date, str):
+        start_date = start_date.strip() or None
+    if isinstance(end_date, str):
+        end_date = end_date.strip() or None
+
+    if ref_date is None:
+        ref_date = now_local_dt().strftime("%Y-%m-%d")
+
+    has_discount = False
+    payable_price = price
+    discount_amount = 0
+    discount_text = ""
+
+    if disc_enabled and price > 0:
+        date_valid = True
+        if start_date and ref_date < start_date:
+            date_valid = False
+        if end_date and ref_date > end_date:
+            date_valid = False
+
+        if date_valid:
+            if disc_type == "percentage":
+                if 0 < disc_val <= 100:
+                    discount_amount = int(round(price * (disc_val / 100.0)))
+                    payable_price = max(1, price - discount_amount)
+                    has_discount = True
+                    display_pct = int(disc_val) if disc_val.is_integer() else disc_val
+                    discount_text = f"{display_pct}% OFF"
+            elif disc_type == "fixed":
+                if 0 < disc_val < price:
+                    discount_amount = int(disc_val)
+                    payable_price = max(1, price - discount_amount)
+                    has_discount = True
+                    discount_text = f"₹{discount_amount} OFF"
+
+    # Backward compatibility with legacy discount_price column
+    if not has_discount and price > 0:
+        legacy_disc = svc.get("discount_price")
+        if legacy_disc is not None and isinstance(legacy_disc, (int, float)) and 0 < legacy_disc < price:
+            payable_price = int(legacy_disc)
+            has_discount = True
+            discount_amount = price - payable_price
+            discount_text = f"₹{discount_amount} OFF"
+
+    return {
+        "price": price,
+        "payable_price": payable_price,
+        "discount_price": payable_price if has_discount else None,
+        "has_discount": has_discount,
+        "discount_enabled": 1 if disc_enabled else 0,
+        "discount_type": disc_type,
+        "discount_value": disc_val,
+        "discount_start_date": start_date,
+        "discount_end_date": end_date,
+        "discount_amount": discount_amount,
+        "discount_text": discount_text,
+    }
+
+
 def get_authoritative_services_catalog():
     """
     Retrieves services from the database `services` table.
@@ -522,6 +623,8 @@ def get_authoritative_services_catalog():
             catalog = {}
             for r in rows:
                 item = dict(r)
+                pricing = compute_service_pricing(item)
+                item.update(pricing)
                 item["aliases"] = [item["id"], item["name"].lower()]
                 item["duration"] = item.get("duration_minutes", 30)
                 if item["id"] in AUTHORITATIVE_SERVICES:
@@ -549,15 +652,12 @@ def resolve_and_validate_services(service_input):
     if isinstance(service_input, list):
         items = [str(s).strip() for s in service_input if str(s).strip()]
     elif isinstance(service_input, str):
-        # Split on comma or plus if multi-service string
-        # Clean price annotations e.g. "Haircut (₹120)" -> "haircut"
         raw_items = [p.strip() for p in re.split(r"[,+]", service_input) if p.strip()]
         items = raw_items
 
     resolved_map = {}
 
     for item in items:
-        # Strip currency symbols and price brackets: "Haircut (₹120)" -> "haircut"
         cleaned = re.sub(r"[\(₹\?\d\–\-\)]", "", item).lower().strip()
         matched_svc = None
 
@@ -570,7 +670,6 @@ def resolve_and_validate_services(service_input):
                 if cleaned in svc["aliases"] or item.lower() in svc["aliases"]:
                     matched_svc = svc
                     break
-                # Partial match check
                 for alias in svc["aliases"]:
                     if alias in cleaned or cleaned in alias:
                         matched_svc = svc
@@ -589,15 +688,11 @@ def resolve_and_validate_services(service_input):
 
     validated_list = list(resolved_map.values())
     for s in validated_list:
-        disc = s.get("discount_price")
-        if disc is not None and isinstance(disc, (int, float)) and 0 < disc < s["price"]:
-            s["payable_price"] = int(disc)
-        else:
-            s["payable_price"] = int(s["price"])
+        pricing = compute_service_pricing(s)
+        s.update(pricing)
 
     total_price = sum(s["payable_price"] for s in validated_list)
     total_duration = sum(s["duration"] for s in validated_list)
-    # Ensure minimum appointment duration
     if total_duration < SERVICE_DURATION_MINUTES:
         total_duration = SERVICE_DURATION_MINUTES
 
@@ -1899,11 +1994,9 @@ def api_services():
                 services_list = []
                 for r in rows:
                     item = dict(r)
-                    disc = item.get("discount_price")
-                    if disc is not None and isinstance(disc, (int, float)) and 0 < disc < item["price"]:
-                        item["payable_price"] = int(disc)
-                    else:
-                        item["payable_price"] = int(item["price"])
+                    pricing = compute_service_pricing(item)
+                    item.update(pricing)
+                    item["duration"] = item.get("duration_minutes", 30)
                     services_list.append(item)
                 return jsonify({
                     "success": True,
@@ -1919,7 +2012,14 @@ def api_services():
             "price": s["price"],
             "discount_price": s.get("discount_price"),
             "payable_price": s["price"],
+            "has_discount": False,
+            "discount_enabled": 0,
+            "discount_type": "percentage",
+            "discount_value": 0,
+            "discount_start_date": None,
+            "discount_end_date": None,
             "duration": s["duration"],
+            "duration_minutes": s["duration"],
             "description": s["description"],
             "category": s.get("category", "Hair & Grooming"),
             "image_url": s.get("image_url", ""),
@@ -2452,12 +2552,9 @@ def api_admin_services_list():
             ).fetchone()[0]
             svc_dict["appointment_count"] = apt_count
 
-            # Calculate payable price
-            disc = svc_dict.get("discount_price")
-            if disc is not None and isinstance(disc, (int, float)) and 0 < disc < svc_dict["price"]:
-                svc_dict["payable_price"] = int(disc)
-            else:
-                svc_dict["payable_price"] = int(svc_dict["price"])
+            # Attach computed pricing details
+            pricing = compute_service_pricing(svc_dict)
+            svc_dict.update(pricing)
 
             services_data.append(svc_dict)
 
@@ -2471,7 +2568,6 @@ def api_admin_create_service():
     name = (payload.get("name") or "").strip()
     raw_slug = (payload.get("id") or "").strip().lower()
     raw_price = payload.get("price")
-    raw_discount = payload.get("discount_price")
     duration = payload.get("duration_minutes") or 30
     category = (payload.get("category") or "Hair & Grooming").strip()
     description = (payload.get("description") or "").strip()
@@ -2492,19 +2588,53 @@ def api_admin_create_service():
     except (ValueError, TypeError):
         return jsonify({"success": False, "error": "Regular Price must be a valid number."}), 400
 
-    parsed_discount = None
-    if raw_discount not in (None, "", "null"):
+    # Discount fields processing & validation
+    discount_enabled = 1 if payload.get("discount_enabled") else 0
+    discount_type = str(payload.get("discount_type") or "percentage").strip().lower()
+    if discount_type not in ("percentage", "fixed"):
+        discount_type = "percentage"
+
+    raw_disc_val = payload.get("discount_value")
+    discount_value = 0.0
+    start_date = (payload.get("discount_start_date") or "").strip() or None
+    end_date = (payload.get("discount_end_date") or "").strip() or None
+
+    if start_date and end_date and end_date < start_date:
+        return jsonify({"success": False, "error": "Discount End Date cannot be earlier than Start Date."}), 400
+
+    if discount_enabled:
         try:
-            parsed_discount = int(raw_discount)
-            if parsed_discount < 0:
-                return jsonify({"success": False, "error": "Discount Price cannot be negative."}), 400
-            if parsed_discount >= price:
-                return jsonify({
-                    "success": False,
-                    "error": f"Discount Price (₹{parsed_discount}) must be strictly less than Regular Price (₹{price})."
-                }), 400
+            discount_value = float(raw_disc_val or 0)
+            if discount_type == "percentage":
+                if discount_value <= 0 or discount_value >= 100:
+                    return jsonify({"success": False, "error": "Percentage discount must be between 1% and 99%."}), 400
+            elif discount_type == "fixed":
+                if discount_value <= 0:
+                    return jsonify({"success": False, "error": "Fixed discount must be greater than ₹0."}), 400
+                if discount_value >= price:
+                    return jsonify({"success": False, "error": f"Fixed discount (₹{int(discount_value)}) must be strictly less than Regular Price (₹{price})."}), 400
         except (ValueError, TypeError):
-            return jsonify({"success": False, "error": "Discount Price must be a valid number."}), 400
+            return jsonify({"success": False, "error": "Discount value must be a valid number."}), 400
+    elif payload.get("discount_price") not in (None, "", "null"):
+        # Legacy discount_price support
+        try:
+            raw_dp = int(payload.get("discount_price"))
+            if 0 < raw_dp < price:
+                discount_enabled = 1
+                discount_type = "fixed"
+                discount_value = float(price - raw_dp)
+        except (ValueError, TypeError):
+            pass
+
+    pricing_preview = compute_service_pricing({
+        "price": price,
+        "discount_enabled": discount_enabled,
+        "discount_type": discount_type,
+        "discount_value": discount_value,
+        "discount_start_date": start_date,
+        "discount_end_date": end_date,
+    })
+    calculated_discount_price = pricing_preview["discount_price"]
 
     try:
         duration = int(duration)
@@ -2513,12 +2643,11 @@ def api_admin_create_service():
     except (ValueError, TypeError):
         duration = 30
 
-    # Auto generate clean slug if omitted
     slug = raw_slug
     if not slug:
         slug = re.sub(r"[^a-z0-9]+", "_", name.lower()).strip("_")
         if not slug:
-            slug = f"service_{int(time.time())}"
+            slug = f"service_{int(datetime.now().timestamp())}"
 
     now_iso = now_local_iso()
     try:
@@ -2526,13 +2655,21 @@ def api_admin_create_service():
             conn.execute(
                 """
                 INSERT INTO services (
-                    id, name, price, discount_price, duration_minutes,
-                    category, description, image_url, is_active,
-                    display_order, is_archived, created_at, updated_at
+                    id, name, price, discount_price,
+                    discount_enabled, discount_type, discount_value,
+                    discount_start_date, discount_end_date,
+                    duration_minutes, category, description, image_url,
+                    is_active, display_order, is_archived, created_at, updated_at
                 )
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 0, ?, ?)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 0, ?, ?)
                 """,
-                (slug, name, price, parsed_discount, duration, category, description, image_url, is_active, int(display_order), now_iso, now_iso),
+                (
+                    slug, name, price, calculated_discount_price,
+                    discount_enabled, discount_type, discount_value,
+                    start_date, end_date,
+                    duration, category, description, image_url,
+                    is_active, int(display_order), now_iso, now_iso
+                ),
             )
             conn.commit()
         log_activity("create_service", f"Created service '{name}' (#{slug}) at ₹{price}")
@@ -2543,7 +2680,14 @@ def api_admin_create_service():
                 "id": slug,
                 "name": name,
                 "price": price,
-                "discount_price": parsed_discount,
+                "discount_price": calculated_discount_price,
+                "payable_price": pricing_preview["payable_price"],
+                "has_discount": pricing_preview["has_discount"],
+                "discount_enabled": discount_enabled,
+                "discount_type": discount_type,
+                "discount_value": discount_value,
+                "discount_start_date": start_date,
+                "discount_end_date": end_date,
                 "duration_minutes": duration,
                 "category": category,
                 "is_active": is_active,
@@ -2575,25 +2719,61 @@ def api_admin_update_service(service_id):
         except (ValueError, TypeError):
             return jsonify({"success": False, "error": "Regular Price must be a valid number."}), 400
 
-        # Handle discount price: update, add, or remove (if null or empty string passed)
-        if "discount_price" in payload:
-            raw_discount = payload.get("discount_price")
-            if raw_discount in (None, "", "null"):
-                discount_price = None
-            else:
-                try:
-                    discount_price = int(raw_discount)
-                    if discount_price < 0:
-                        return jsonify({"success": False, "error": "Discount Price cannot be negative."}), 400
-                    if discount_price >= price:
-                        return jsonify({
-                            "success": False,
-                            "error": f"Discount Price (₹{discount_price}) must be strictly less than Regular Price (₹{price})."
-                        }), 400
-                except (ValueError, TypeError):
-                    return jsonify({"success": False, "error": "Discount Price must be a valid number."}), 400
+        # Check discount fields
+        if "discount_enabled" in payload:
+            discount_enabled = 1 if payload.get("discount_enabled") else 0
         else:
-            discount_price = existing["discount_price"]
+            discount_enabled = existing["discount_enabled"] if "discount_enabled" in existing.keys() else 0
+
+        discount_type = str(payload.get("discount_type", existing["discount_type"] if "discount_type" in existing.keys() else "percentage")).strip().lower()
+        if discount_type not in ("percentage", "fixed"):
+            discount_type = "percentage"
+
+        raw_disc_val = payload.get("discount_value", existing["discount_value"] if "discount_value" in existing.keys() else 0)
+        discount_value = 0.0
+
+        start_date = payload.get("discount_start_date", existing["discount_start_date"] if "discount_start_date" in existing.keys() else None)
+        if isinstance(start_date, str):
+            start_date = start_date.strip() or None
+        end_date = payload.get("discount_end_date", existing["discount_end_date"] if "discount_end_date" in existing.keys() else None)
+        if isinstance(end_date, str):
+            end_date = end_date.strip() or None
+
+        if start_date and end_date and end_date < start_date:
+            return jsonify({"success": False, "error": "Discount End Date cannot be earlier than Start Date."}), 400
+
+        if discount_enabled:
+            try:
+                discount_value = float(raw_disc_val or 0)
+                if discount_type == "percentage":
+                    if discount_value <= 0 or discount_value >= 100:
+                        return jsonify({"success": False, "error": "Percentage discount must be between 1% and 99%."}), 400
+                elif discount_type == "fixed":
+                    if discount_value <= 0:
+                        return jsonify({"success": False, "error": "Fixed discount must be greater than ₹0."}), 400
+                    if discount_value >= price:
+                        return jsonify({"success": False, "error": f"Fixed discount (₹{int(discount_value)}) must be strictly less than Regular Price (₹{price})."}), 400
+            except (ValueError, TypeError):
+                return jsonify({"success": False, "error": "Discount value must be a valid number."}), 400
+        elif "discount_price" in payload and payload.get("discount_price") not in (None, "", "null"):
+            try:
+                raw_dp = int(payload.get("discount_price"))
+                if 0 < raw_dp < price:
+                    discount_enabled = 1
+                    discount_type = "fixed"
+                    discount_value = float(price - raw_dp)
+            except (ValueError, TypeError):
+                pass
+
+        pricing_preview = compute_service_pricing({
+            "price": price,
+            "discount_enabled": discount_enabled,
+            "discount_type": discount_type,
+            "discount_value": discount_value,
+            "discount_start_date": start_date,
+            "discount_end_date": end_date,
+        })
+        calculated_discount_price = pricing_preview["discount_price"]
 
         duration = int(payload.get("duration_minutes", existing["duration_minutes"]))
         category = payload.get("category", existing["category"])
@@ -2607,12 +2787,22 @@ def api_admin_update_service(service_id):
         conn.execute(
             """
             UPDATE services
-            SET name = ?, price = ?, discount_price = ?, duration_minutes = ?,
-                category = ?, description = ?, image_url = ?, is_active = ?,
-                display_order = ?, is_archived = ?, updated_at = ?
+            SET name = ?, price = ?, discount_price = ?,
+                discount_enabled = ?, discount_type = ?, discount_value = ?,
+                discount_start_date = ?, discount_end_date = ?,
+                duration_minutes = ?, category = ?, description = ?,
+                image_url = ?, is_active = ?, display_order = ?,
+                is_archived = ?, updated_at = ?
             WHERE id = ?
             """,
-            (name, price, discount_price, duration, category, description, image_url, is_active, display_order, is_archived, now_iso, service_id),
+            (
+                name, price, calculated_discount_price,
+                discount_enabled, discount_type, discount_value,
+                start_date, end_date,
+                duration, category, description,
+                image_url, is_active, display_order,
+                is_archived, now_iso, service_id
+            ),
         )
         conn.commit()
 
@@ -3022,7 +3212,7 @@ def api_bookings():
             "formatted_time": formatted_time,
             "total_price": total_price,
             "selected_services": [
-                {"id": s["id"], "name": s["name"], "price": s["price"]}
+                {"id": s["id"], "name": s["name"], "price": s.get("payable_price", s["price"])}
                 for s in validated_services
             ],
         }), 201

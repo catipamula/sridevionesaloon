@@ -457,38 +457,9 @@ function initServiceBookButtons() {
   bookBtns.forEach(btn => {
     btn.addEventListener('click', e => {
       e.preventDefault();
-      const serviceTarget = (btn.dataset.service || '').toLowerCase();
-      if (!serviceTarget) return;
-
-      // Map service name to checkbox in booking form
-      const checkboxes = qsa('.service-checkbox');
-      let matchedCb = null;
-
-      checkboxes.forEach(cb => {
-        const id = (cb.value || '').toLowerCase();
-        const name = (cb.dataset.name || '').toLowerCase();
-        if (
-          id === serviceTarget ||
-          name === serviceTarget ||
-          (serviceTarget === 'haircut' && (id === 'cutting' || name.includes('cutting'))) ||
-          (serviceTarget.includes('combo') && (id === 'combo' || name.includes('combo'))) ||
-          (serviceTarget.includes('tan') && (id === 'tan_pack' || name.includes('tan'))) ||
-          (serviceTarget.includes('lite') && (id === 'lite_facial' || name.includes('lite'))) ||
-          (serviceTarget.includes('full') && (id === 'full_facial' || name.includes('full'))) ||
-          (serviceTarget.includes('scrub') && (id === 'scrub' || name.includes('scrub'))) ||
-          (serviceTarget.includes('shaving') && !serviceTarget.includes('combo') && (id === 'shaving' || name.includes('shaving')))
-        ) {
-          matchedCb = cb;
-        }
-      });
-
-      if (matchedCb) {
-        matchedCb.checked = true;
-        const card = matchedCb.closest('.service-select-card');
-        if (card) card.classList.add('is-selected');
-
-        // Dispatch change event so live total updates immediately
-        matchedCb.dispatchEvent(new Event('change', { bubbles: true }));
+      const serviceTarget = (btn.dataset.service || '').toLowerCase().trim();
+      if (serviceTarget && window.selectServiceItem) {
+        window.selectServiceItem(serviceTarget);
       }
 
       // Smooth scroll to booking form
@@ -527,10 +498,11 @@ function initBookingForm() {
   const summaryDetails   = qs('#summary-details', summaryEl);
   const previewBtn       = qs('#preview-booking-btn');
 
-  const liveTotalEl       = qs('#live-total-price');
-  const liveServicesEl    = qs('#live-selected-services-text');
-  const liveSummaryBar    = qs('#booking-live-summary');
-  const gridContainer     = qs('#service-selection-grid', form);
+  const liveTotalEl          = qs('#live-total-price');
+  const liveServicesEl       = qs('#live-selected-services-text');
+  const servicesListDisplay  = qs('#booking-services-list-display');
+  const totalDisplay         = qs('#booking-total-display');
+  const gridContainer        = qs('#service-selection-grid', form);
 
   if (dateEl) dateEl.min = todayString();
 
@@ -540,21 +512,33 @@ function initBookingForm() {
   function updateServicesSelection() {
     let total = 0;
     const selectedList = [];
-    const currentCheckboxes = qsa('.service-checkbox', form);
+    const currentItems = qsa('.service-select-item', form);
 
-    currentCheckboxes.forEach(cb => {
-      const card = cb.closest('.service-select-card');
-      const price = parseInt(cb.dataset.price, 10) || 0;
-      const name = cb.dataset.name || cb.value;
+    currentItems.forEach(item => {
+      const isSelected = item.classList.contains('is-selected');
+      const price = parseInt(item.dataset.price, 10) || 0;
+      const name = item.dataset.name || item.dataset.serviceId;
 
-      if (cb.checked) {
-        if (card) card.classList.add('is-selected');
+      if (isSelected) {
         total += price;
-        selectedList.push({ id: cb.value, name, price });
-      } else {
-        if (card) card.classList.remove('is-selected');
+        selectedList.push({ id: item.dataset.serviceId, name, price });
       }
     });
+
+    if (servicesListDisplay) {
+      if (selectedList.length > 0) {
+        servicesListDisplay.innerHTML = selectedList
+          .map(s => `<li class="summary-service-row">${escapeHtml(s.name)} — ₹${s.price}</li>`)
+          .join('');
+        if (serviceErr) clearError(serviceErr);
+      } else {
+        servicesListDisplay.innerHTML = '<li class="summary-empty-text">None selected</li>';
+      }
+    }
+
+    if (totalDisplay) {
+      totalDisplay.textContent = `₹${total}`;
+    }
 
     if (liveTotalEl) {
       liveTotalEl.textContent = `₹${total}`;
@@ -564,26 +548,71 @@ function initBookingForm() {
       if (selectedList.length > 0) {
         liveServicesEl.textContent = selectedList.map(s => `${s.name} (₹${s.price})`).join(', ');
         liveServicesEl.classList.remove('empty');
-        if (liveSummaryBar) liveSummaryBar.classList.add('has-selection');
-        if (serviceErr) clearError(serviceErr);
       } else {
         liveServicesEl.textContent = 'None selected';
         liveServicesEl.classList.add('empty');
-        if (liveSummaryBar) liveSummaryBar.classList.remove('has-selection');
       }
     }
 
     return { total, selectedList, count: selectedList.length };
   }
 
-  function bindCheckboxListeners() {
-    const currentCheckboxes = qsa('.service-checkbox', form);
-    currentCheckboxes.forEach(cb => {
-      cb.addEventListener('change', () => {
-        updateServicesSelection();
-      });
+  function toggleServiceItem(item) {
+    const isSelected = item.classList.contains('is-selected');
+    if (isSelected) {
+      item.classList.remove('is-selected');
+      item.setAttribute('aria-checked', 'false');
+    } else {
+      item.classList.add('is-selected');
+      item.setAttribute('aria-checked', 'true');
+    }
+    updateServicesSelection();
+  }
+
+  function bindClickableListeners() {
+    const items = qsa('.service-select-item', form);
+    items.forEach(item => {
+      item.onclick = (e) => {
+        e.preventDefault();
+        toggleServiceItem(item);
+      };
+      item.onkeydown = (e) => {
+        if (e.key === ' ' || e.key === 'Enter') {
+          e.preventDefault();
+          toggleServiceItem(item);
+        }
+      };
     });
   }
+
+  window.selectServiceItem = function(serviceTarget) {
+    if (!serviceTarget) return;
+    const items = qsa('.service-select-item', form);
+    let matchedItem = null;
+    items.forEach(item => {
+      const id = (item.dataset.serviceId || '').toLowerCase();
+      const name = (item.dataset.name || '').toLowerCase();
+      if (
+        id === serviceTarget ||
+        name === serviceTarget ||
+        (serviceTarget === 'haircut' && (id === 'cutting' || name.includes('cutting'))) ||
+        (serviceTarget.includes('combo') && (id === 'combo' || name.includes('combo'))) ||
+        (serviceTarget.includes('tan') && (id === 'tan_pack' || name.includes('tan'))) ||
+        (serviceTarget.includes('lite') && (id === 'lite_facial' || name.includes('lite'))) ||
+        (serviceTarget.includes('full') && (id === 'full_facial' || name.includes('full'))) ||
+        (serviceTarget.includes('scrub') && (id === 'scrub' || name.includes('scrub'))) ||
+        (serviceTarget.includes('shaving') && !serviceTarget.includes('combo') && (id === 'shaving' || name.includes('shaving')))
+      ) {
+        matchedItem = item;
+      }
+    });
+
+    if (matchedItem) {
+      matchedItem.classList.add('is-selected');
+      matchedItem.setAttribute('aria-checked', 'true');
+      updateServicesSelection();
+    }
+  };
 
   async function hydrateDynamicServices() {
     if (!gridContainer) return;
@@ -593,55 +622,36 @@ function initBookingForm() {
       const data = await res.json();
       if (!data.success || !Array.isArray(data.services) || data.services.length === 0) return;
 
-      const previouslyChecked = new Set(
-        Array.from(qsa('.service-checkbox', form))
-          .filter(cb => cb.checked)
-          .map(cb => cb.value)
+      const previouslySelected = new Set(
+        Array.from(qsa('.service-select-item.is-selected', form))
+          .map(item => item.dataset.serviceId)
       );
 
-      // 1. Synchronize Booking Form Selection Cards & Live Calculator
+      // 1. Synchronize Booking Form Clickable Service Options (Clean clickable rows: NO checkboxes/radio buttons/icons/descriptions)
       gridContainer.innerHTML = data.services.map(svc => {
-        const isChecked = previouslyChecked.has(svc.id);
-        const cardSelectedClass = isChecked ? ' is-selected' : '';
-        const checkedAttr = isChecked ? ' checked' : '';
-        const descHtml = svc.description ? `<p class="service-card-desc">${escapeHtml(svc.description)}</p>` : '';
+        const isSelected = previouslySelected.has(svc.id);
+        const selectedClass = isSelected ? ' is-selected' : '';
+        const ariaChecked = isSelected ? 'true' : 'false';
 
-        const payablePrice = (svc.discount_price && svc.discount_price > 0 && svc.discount_price < svc.price)
-          ? svc.discount_price
-          : (svc.payable_price || svc.price);
-        const hasDiscount = payablePrice < svc.price;
+        const payablePrice = (svc.payable_price !== undefined)
+          ? svc.payable_price
+          : ((svc.discount_price && svc.discount_price > 0 && svc.discount_price < svc.price) ? svc.discount_price : svc.price);
+        const hasDiscount = Boolean(svc.has_discount || payablePrice < svc.price);
 
         const priceDisplay = hasDiscount
-          ? `<span class="service-card-old-price" style="text-decoration:line-through; opacity:0.6; margin-right:4px;">₹${svc.price}</span>₹${payablePrice}`
+          ? `<span class="service-item-old-price">₹${svc.price}</span><span>₹${payablePrice}</span>`
           : `₹${svc.price}`;
 
         return `
-          <label class="service-select-card${cardSelectedClass}" for="svc-${svc.id}" data-service-id="${svc.id}" data-price="${payablePrice}" data-name="${escapeHtml(svc.name)}">
-            <input type="checkbox" id="svc-${svc.id}" name="services" value="${svc.id}" class="service-checkbox sr-only" data-price="${payablePrice}" data-name="${escapeHtml(svc.name)}"${checkedAttr} />
-            <div class="service-card-box">
-              <div class="service-card-check" aria-hidden="true">
-                <span data-lucide="check" class="icon-check"></span>
-              </div>
-              <div class="service-card-content">
-                <div class="service-card-header">
-                  <span class="service-card-name" id="svc-${svc.id}-name">${escapeHtml(svc.name)}</span>
-                  <span class="service-card-price" id="svc-${svc.id}-price">
-                    ${priceDisplay}
-                  </span>
-                </div>
-                ${descHtml}
-                <div class="service-card-meta">
-                  <span class="service-card-duration">
-                    <span data-lucide="clock" class="icon-clock-xs" aria-hidden="true"></span>
-                    ${svc.duration || svc.duration_minutes || 30} mins
-                  </span>
-                  <span class="service-card-category">${escapeHtml(svc.category || 'Hair & Grooming')}</span>
-                </div>
-              </div>
-            </div>
-          </label>
+          <button type="button" class="service-select-item${selectedClass}" data-service-id="${svc.id}" data-price="${payablePrice}" data-name="${escapeHtml(svc.name)}" role="checkbox" aria-checked="${ariaChecked}">
+            <span class="service-item-name">${escapeHtml(svc.name)}</span>
+            <span class="service-item-price">${priceDisplay}</span>
+          </button>
         `;
       }).join('');
+
+      bindClickableListeners();
+      updateServicesSelection();
 
       // 2. Synchronize Transparent Pricing Catalogue (#price-grid)
       const priceGrid = document.getElementById('price-grid');
@@ -672,10 +682,10 @@ function initBookingForm() {
           const catSlug = categorySlugMap[catName] || 'all';
 
           const itemsHtml = items.map(item => {
-            const payable = (item.discount_price && item.discount_price > 0 && item.discount_price < item.price)
-              ? item.discount_price
-              : (item.payable_price || item.price);
-            const hasDisc = payable < item.price;
+            const payable = (item.payable_price !== undefined)
+              ? item.payable_price
+              : ((item.discount_price && item.discount_price > 0 && item.discount_price < item.price) ? item.discount_price : item.price);
+            const hasDisc = Boolean(item.has_discount || payable < item.price);
             const priceHtml = hasDisc
               ? `<span style="text-decoration:line-through; font-size:12px; color:var(--clr-text-muted); margin-right:4px;">₹${item.price}</span><span style="color:var(--clr-gold); font-weight:700;">₹${payable}</span>`
               : `<span style="font-weight:700;">₹${item.price}</span>`;
@@ -707,9 +717,9 @@ function initBookingForm() {
 
       // 3. Synchronize Services Showcase cards (.services-section .service-card)
       data.services.forEach(svc => {
-        const payable = (svc.discount_price && svc.discount_price > 0 && svc.discount_price < svc.price)
-          ? svc.discount_price
-          : (svc.payable_price || svc.price);
+        const payable = (svc.payable_price !== undefined)
+          ? svc.payable_price
+          : ((svc.discount_price && svc.discount_price > 0 && svc.discount_price < svc.price) ? svc.discount_price : svc.price);
 
         const cards = qsa('.services-section .service-card');
         cards.forEach(card => {
@@ -717,7 +727,7 @@ function initBookingForm() {
           if (titleEl && titleEl.textContent.trim().toLowerCase() === svc.name.toLowerCase()) {
             const badge = card.querySelector('.service-card-price-badge');
             const footerPrice = card.querySelector('.service-price');
-            const hasDisc = payable < svc.price;
+            const hasDisc = Boolean(svc.has_discount || payable < svc.price);
 
             const display = hasDisc
               ? `<span style="text-decoration:line-through; font-size:12px; opacity:0.7; margin-right:4px;">₹${svc.price}</span>₹${payable}`
@@ -730,15 +740,13 @@ function initBookingForm() {
       });
 
       initIcons();
-      bindCheckboxListeners();
-      updateServicesSelection();
     } catch (e) {
       console.warn('Dynamic services hydration fallback used:', e);
     }
   }
 
   // Initial calculation on static markup and dynamic hydration
-  bindCheckboxListeners();
+  bindClickableListeners();
   updateServicesSelection();
   hydrateDynamicServices();
 
@@ -860,12 +868,10 @@ function initBookingForm() {
         statusEl.classList.add('success');
         statusEl.classList.remove('error');
       }
-      form.reset();
-      // Uncheck all service checkboxes and reset live total
-      serviceCheckboxes.forEach(cb => {
-        cb.checked = false;
-        const card = cb.closest('.service-select-card');
-        if (card) card.classList.remove('is-selected');
+      // Deselect all service option buttons and reset live summary
+      qsa('.service-select-item', form).forEach(item => {
+        item.classList.remove('is-selected');
+        item.setAttribute('aria-checked', 'false');
       });
       updateServicesSelection();
       if (summaryEl) summaryEl.setAttribute('hidden', 'hidden');

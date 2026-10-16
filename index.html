@@ -940,139 +940,67 @@
                   <span class="service-selection-hint">Choose one or multiple salon services</span>
                 </div>
 
-                <div class="service-selection-grid" role="group" aria-labelledby="services-group-label" id="service-selection-grid">
+                <div class="service-clickable-list" role="group" aria-labelledby="services-group-label" id="service-selection-grid">
                   <!-- Cutting -->
-                  <label class="service-select-card" for="svc-cutting" data-service-id="cutting" data-price="120" data-name="Cutting">
-                    <input type="checkbox" id="svc-cutting" name="services" value="cutting" class="service-checkbox sr-only" data-price="120" data-name="Cutting" aria-labelledby="svc-cutting-name svc-cutting-price" />
-                    <div class="service-card-box">
-                      <div class="service-card-check" aria-hidden="true">
-                        <span data-lucide="check" class="icon-check"></span>
-                      </div>
-                      <div class="service-card-details">
-                        <div class="service-card-title-row">
-                          <span class="service-card-name" id="svc-cutting-name">Cutting</span>
-                          <span class="service-card-price" id="svc-cutting-price">₹120</span>
-                        </div>
-                        <span class="service-card-meta">Precision cut &amp; styling</span>
-                      </div>
-                    </div>
-                  </label>
+                  <button type="button" class="service-select-item" data-service-id="cutting" data-price="120" data-name="Cutting" role="checkbox" aria-checked="false">
+                    <span class="service-item-name">Cutting</span>
+                    <span class="service-item-price">₹120</span>
+                  </button>
 
                   <!-- Shaving -->
-                  <label class="service-select-card" for="svc-shaving" data-service-id="shaving" data-price="70" data-name="Shaving">
-                    <input type="checkbox" id="svc-shaving" name="services" value="shaving" class="service-checkbox sr-only" data-price="70" data-name="Shaving" aria-labelledby="svc-shaving-name svc-shaving-price" />
-                    <div class="service-card-box">
-                      <div class="service-card-check" aria-hidden="true">
-                        <span data-lucide="check" class="icon-check"></span>
-                      </div>
-                      <div class="service-card-details">
-                        <div class="service-card-title-row">
-                          <span class="service-card-name" id="svc-shaving-name">Shaving</span>
-                          <span class="service-card-price" id="svc-shaving-price">₹70</span>
-                        </div>
-                        <span class="service-card-meta">Clean &amp; sharp shave</span>
-                      </div>
-                    </div>
-                  </label>
+                  <button type="button" class="service-select-item" data-service-id="shaving" data-price="70" data-name="Shaving" role="checkbox" aria-checked="false">
+                    <span class="service-item-name">Shaving</span>
+                    <span class="service-item-price">₹70</span>
+                  </button>
 
                   <!-- Cutting + Shaving Combo -->
-                  <label class="service-select-card" for="svc-combo" data-service-id="combo" data-price="170" data-name="Cutting + Shaving Combo">
-                    <input type="checkbox" id="svc-combo" name="services" value="combo" class="service-checkbox sr-only" data-price="170" data-name="Cutting + Shaving Combo" aria-labelledby="svc-combo-name svc-combo-price" />
-                    <div class="service-card-box">
-                      <div class="service-card-check" aria-hidden="true">
-                        <span data-lucide="check" class="icon-check"></span>
-                      </div>
-                      <div class="service-card-details">
-                        <div class="service-card-title-row">
-                          <span class="service-card-name" id="svc-combo-name">Cutting + Shaving Combo</span>
-                          <span class="service-card-price" id="svc-combo-price">₹170</span>
-                        </div>
-                        <span class="service-card-meta">Best value combo grooming</span>
-                      </div>
-                    </div>
-                  </label>
+                  <button type="button" class="service-select-item" data-service-id="combo" data-price="170" data-name="Cutting + Shaving Combo" role="checkbox" aria-checked="false">
+                    <span class="service-item-name">Cutting + Shaving Combo</span>
+                    <span class="service-item-price">₹170</span>
+                  </button>
 
                   <!-- Scrub -->
-                  <label class="service-select-card" for="svc-scrub" data-service-id="scrub" data-price="100" data-name="Scrub">
-                    <input type="checkbox" id="svc-scrub" name="services" value="scrub" class="service-checkbox sr-only" data-price="100" data-name="Scrub" aria-labelledby="svc-scrub-name svc-scrub-price" />
-                    <div class="service-card-box">
-                      <div class="service-card-check" aria-hidden="true">
-                        <span data-lucide="check" class="icon-check"></span>
-                      </div>
-                      <div class="service-card-details">
-                        <div class="service-card-title-row">
-                          <span class="service-card-name" id="svc-scrub-name">Scrub</span>
-                          <span class="service-card-price" id="svc-scrub-price">₹100</span>
-                        </div>
-                        <span class="service-card-meta">Exfoliating skin scrub</span>
-                      </div>
-                    </div>
-                  </label>
+                  <button type="button" class="service-select-item" data-service-id="scrub" data-price="100" data-name="Scrub" role="checkbox" aria-checked="false">
+                    <span class="service-item-name">Scrub</span>
+                    <span class="service-item-price">₹100</span>
+                  </button>
 
                   <!-- Tan Pack -->
-                  <label class="service-select-card" for="svc-tanpack" data-service-id="tan_pack" data-price="150" data-name="Tan Pack">
-                    <input type="checkbox" id="svc-tanpack" name="services" value="tan_pack" class="service-checkbox sr-only" data-price="150" data-name="Tan Pack" aria-labelledby="svc-tanpack-name svc-tanpack-price" />
-                    <div class="service-card-box">
-                      <div class="service-card-check" aria-hidden="true">
-                        <span data-lucide="check" class="icon-check"></span>
-                      </div>
-                      <div class="service-card-details">
-                        <div class="service-card-title-row">
-                          <span class="service-card-name" id="svc-tanpack-name">Tan Pack</span>
-                          <span class="service-card-price" id="svc-tanpack-price">₹150</span>
-                        </div>
-                        <span class="service-card-meta">De-tan skin treatment</span>
-                      </div>
-                    </div>
-                  </label>
+                  <button type="button" class="service-select-item" data-service-id="tan_pack" data-price="150" data-name="Tan Pack" role="checkbox" aria-checked="false">
+                    <span class="service-item-name">Tan Pack</span>
+                    <span class="service-item-price">₹150</span>
+                  </button>
 
                   <!-- Lite Facial -->
-                  <label class="service-select-card" for="svc-litefacial" data-service-id="lite_facial" data-price="250" data-name="Lite Facial">
-                    <input type="checkbox" id="svc-litefacial" name="services" value="lite_facial" class="service-checkbox sr-only" data-price="250" data-name="Lite Facial" aria-labelledby="svc-litefacial-name svc-litefacial-price" />
-                    <div class="service-card-box">
-                      <div class="service-card-check" aria-hidden="true">
-                        <span data-lucide="check" class="icon-check"></span>
-                      </div>
-                      <div class="service-card-details">
-                        <div class="service-card-title-row">
-                          <span class="service-card-name" id="svc-litefacial-name">Lite Facial</span>
-                          <span class="service-card-price" id="svc-litefacial-price">₹250</span>
-                        </div>
-                        <span class="service-card-meta">Cleanse &amp; instant glow</span>
-                      </div>
-                    </div>
-                  </label>
+                  <button type="button" class="service-select-item" data-service-id="lite_facial" data-price="250" data-name="Lite Facial" role="checkbox" aria-checked="false">
+                    <span class="service-item-name">Lite Facial</span>
+                    <span class="service-item-price">₹250</span>
+                  </button>
 
                   <!-- Full Facial -->
-                  <label class="service-select-card" for="svc-fullfacial" data-service-id="full_facial" data-price="600" data-name="Full Facial">
-                    <input type="checkbox" id="svc-fullfacial" name="services" value="full_facial" class="service-checkbox sr-only" data-price="600" data-name="Full Facial" aria-labelledby="svc-fullfacial-name svc-fullfacial-price" />
-                    <div class="service-card-box">
-                      <div class="service-card-check" aria-hidden="true">
-                        <span data-lucide="check" class="icon-check"></span>
-                      </div>
-                      <div class="service-card-details">
-                        <div class="service-card-title-row">
-                          <span class="service-card-name" id="svc-fullfacial-name">Full Facial</span>
-                          <span class="service-card-price" id="svc-fullfacial-price">₹600</span>
-                        </div>
-                        <span class="service-card-meta">Deep cleansing renewal</span>
-                      </div>
-                    </div>
-                  </label>
+                  <button type="button" class="service-select-item" data-service-id="full_facial" data-price="600" data-name="Full Facial" role="checkbox" aria-checked="false">
+                    <span class="service-item-name">Full Facial</span>
+                    <span class="service-item-price">₹600</span>
+                  </button>
                 </div>
 
                 <span class="field-error" id="booking-service-error" role="alert" aria-live="polite"></span>
 
-                <!-- Live Dynamic Total Price Bar -->
-                <div class="booking-live-summary" id="booking-live-summary" aria-live="polite">
-                  <div class="live-summary-left">
-                    <span class="live-summary-title">Selected Services:</span>
-                    <span class="live-selected-services empty" id="live-selected-services-text">None selected</span>
+                <!-- Dynamic Live Total & Selected Services Summary -->
+                <div class="booking-selected-summary" id="booking-selected-summary" aria-live="polite">
+                  <div class="summary-services-section">
+                    <div class="summary-services-heading">Selected services:</div>
+                    <ul class="summary-services-list" id="booking-services-list-display">
+                      <li class="summary-empty-text">None selected</li>
+                    </ul>
                   </div>
-                  <div class="live-summary-right">
-                    <span class="live-total-label">Estimated Total:</span>
-                    <span class="live-total-amount" id="live-total-price">₹0</span>
+                  <div class="summary-total-section">
+                    <span class="summary-total-label">Total:</span>
+                    <span class="summary-total-amount" id="booking-total-display">₹0</span>
                   </div>
+                  <!-- Hidden bridge elements for total/text -->
+                  <span id="live-total-price" style="display: none;">₹0</span>
+                  <span id="live-selected-services-text" style="display: none;">None selected</span>
                 </div>
               </div>
             </div>

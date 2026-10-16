@@ -2318,124 +2318,172 @@ textarea.form-control {
   font-weight: 500;
 }
 
-.service-selection-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(230px, 1fr));
-  gap: var(--space-sm);
-  margin-top: 4px;
-  margin-bottom: 6px;
-}
-
-.service-select-card {
-  display: block;
-  cursor: pointer;
-  position: relative;
-  user-select: none;
-  -webkit-tap-highlight-color: transparent;
-}
-
-.service-card-box {
+.service-clickable-list {
   display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-top: 6px;
+  margin-bottom: 12px;
+}
+
+.service-select-item {
+  display: flex;
+  justify-content: space-between;
   align-items: center;
-  gap: var(--space-sm);
-  padding: 11px 14px;
+  width: 100%;
+  padding: 13px 18px;
   background: var(--clr-bg-card-2, #181c26);
   border: 1px solid var(--clr-border, #282e3d);
-  border-radius: var(--radius-lg, 10px);
+  border-radius: var(--radius-md, 8px);
+  color: var(--clr-text, #e2e8f0);
+  font-family: inherit;
+  font-size: 0.95rem;
+  cursor: pointer;
+  text-align: left;
+  user-select: none;
+  -webkit-tap-highlight-color: transparent;
   transition: border-color 0.2s ease, background 0.2s ease, box-shadow 0.2s ease, transform 0.15s ease;
 }
 
-.service-select-card:hover .service-card-box {
+.service-select-item:hover {
   border-color: rgba(197, 160, 89, 0.45);
-  background: #1d222f;
+  background: #1e2433;
   transform: translateY(-1px);
 }
 
-.service-checkbox:focus-visible + .service-card-box {
+.service-select-item:focus-visible {
   outline: 2px solid var(--clr-gold, #c5a059);
   outline-offset: 2px;
 }
 
-/* Selected state: highlighted border, golden background tint & shadow */
-.service-checkbox:checked + .service-card-box,
-.service-select-card.is-selected .service-card-box {
+.service-select-item.is-selected {
   border-color: var(--clr-gold, #c5a059);
-  background: linear-gradient(135deg, rgba(197, 160, 89, 0.15) 0%, rgba(24, 28, 38, 0.98) 100%);
-  box-shadow: 0 0 16px rgba(197, 160, 89, 0.2), inset 0 0 0 1px rgba(197, 160, 89, 0.3);
+  background: linear-gradient(135deg, rgba(197, 160, 89, 0.18) 0%, rgba(26, 31, 44, 0.98) 100%);
+  box-shadow: 0 0 16px rgba(197, 160, 89, 0.22), inset 0 0 0 1px rgba(197, 160, 89, 0.4);
 }
 
-.service-card-check {
-  width: 22px;
-  height: 22px;
-  border-radius: 6px;
-  border: 1.5px solid #3c4558;
-  background: rgba(0, 0, 0, 0.25);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  flex-shrink: 0;
-  transition: all 0.2s ease;
-}
-
-.service-checkbox:checked + .service-card-box .service-card-check,
-.service-select-card.is-selected .service-card-check {
-  background: var(--clr-gold, #c5a059);
-  border-color: var(--clr-gold, #c5a059);
-  color: #0e1118;
-}
-
-.service-card-check .icon-check {
-  width: 14px;
-  height: 14px;
-  stroke: #0e1118;
-  stroke-width: 3;
-  opacity: 0;
-  transform: scale(0.6);
-  transition: opacity 0.2s ease, transform 0.2s ease;
-}
-
-.service-checkbox:checked + .service-card-box .icon-check,
-.service-select-card.is-selected .icon-check {
-  opacity: 1;
-  transform: scale(1);
-}
-
-.service-card-details {
-  flex: 1;
-  min-width: 0;
-}
-
-.service-card-title-row {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  gap: var(--space-xs);
-  margin-bottom: 2px;
-}
-
-.service-card-name {
-  font-size: 0.9rem;
+.service-item-name {
+  font-size: 0.95rem;
   font-weight: 600;
-  color: var(--clr-heading, #ffffff);
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
+  color: #ffffff;
+  transition: color 0.2s ease;
 }
 
-.service-card-price {
+.service-select-item.is-selected .service-item-name {
+  color: #ffffff;
+  font-weight: 700;
+}
+
+.service-item-price {
   font-size: 0.95rem;
   font-weight: 700;
   color: var(--clr-gold, #c5a059);
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
   flex-shrink: 0;
 }
 
-.service-card-meta {
-  display: block;
-  font-size: 0.74rem;
+.service-item-old-price {
+  text-decoration: line-through;
+  opacity: 0.55;
+  font-size: 0.85em;
   color: var(--clr-text-muted, #8e99ac);
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
+}
+
+/* ═══════════════════════════════════════════════
+   DYNAMIC LIVE TOTAL & SELECTED SUMMARY
+   ═══════════════════════════════════════════════ */
+.booking-selected-summary {
+  background: rgba(197, 160, 89, 0.05);
+  border: 1px solid var(--clr-border-gold, rgba(197, 160, 89, 0.3));
+  border-radius: var(--radius-md, 8px);
+  padding: 14px 18px;
+  margin-top: 12px;
+  margin-bottom: 16px;
+}
+
+.summary-services-section {
+  margin-bottom: 8px;
+}
+
+.summary-services-heading {
+  font-size: 0.85rem;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  color: var(--clr-text-muted, #8e99ac);
+  font-weight: 700;
+  margin-bottom: 6px;
+}
+
+.summary-services-list {
+  list-style: none;
+  padding: 0;
+  margin: 0 0 8px 0;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.summary-service-row {
+  font-size: 0.95rem;
+  color: #e2e8f0;
+  display: flex;
+  align-items: center;
+}
+
+.summary-service-row::before {
+  content: "– ";
+  color: var(--clr-gold, #c5a059);
+  margin-right: 6px;
+  font-weight: 700;
+}
+
+.summary-empty-text {
+  font-size: 0.9rem;
+  color: var(--clr-text-muted, #8e99ac);
+  font-style: italic;
+}
+
+.summary-total-section {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  border-top: 1px dashed rgba(255, 255, 255, 0.12);
+  padding-top: 10px;
+  margin-top: 6px;
+}
+
+.summary-total-label {
+  font-size: 1.05rem;
+  font-weight: 700;
+  color: #ffffff;
+}
+
+.summary-total-amount {
+  font-size: 1.25rem;
+  font-weight: 800;
+  color: var(--clr-gold, #c5a059);
+}
+
+@media (max-width: 480px) {
+  .service-select-item {
+    padding: 11px 14px;
+    font-size: 0.9rem;
+    min-height: 46px;
+  }
+  .service-item-name {
+    font-size: 0.9rem;
+  }
+  .service-item-price {
+    font-size: 0.9rem;
+  }
+  .booking-selected-summary {
+    padding: 12px 14px;
+  }
+  .summary-service-row {
+    font-size: 0.88rem;
+  }
 }
 
 /* ═══════════════════════════════════════════════

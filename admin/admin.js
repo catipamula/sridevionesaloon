@@ -1123,8 +1123,9 @@ Choose: booked, confirmed, completed, cancelled`,
         const imgSrc = s.image_url || '/assets/logo.png';
         const isArchived = Boolean(s.is_archived);
         const isActive = Boolean(s.is_active);
-        const hasDiscount = Boolean(s.discount_price && s.discount_price > 0 && s.discount_price < s.price);
-        const savings = hasDiscount ? s.price - s.discount_price : 0;
+        const hasDiscount = Boolean(s.has_discount || (s.discount_price && s.discount_price > 0 && s.discount_price < s.price));
+        const payablePrice = s.payable_price || (hasDiscount ? s.discount_price : s.price);
+        const savings = hasDiscount ? (s.price - payablePrice) : 0;
 
         let statusBadge = '';
         if (isArchived) {
@@ -1135,12 +1136,24 @@ Choose: booked, confirmed, completed, cancelled`,
           statusBadge = '<span class="badge badge-inactive">Inactive</span>';
         }
 
-        const discountCell = hasDiscount
-          ? `<div style="display:flex; flex-direction:column; align-items:flex-end; gap:2px;">
-               <span class="price-discount-val">${formatINR(s.discount_price)}</span>
-               <span class="badge-discount-savings">Save ${formatINR(savings)}</span>
-             </div>`
-          : `<span class="price-dash">—</span>`;
+        let discountCell = '<span class="price-dash">—</span>';
+        if (hasDiscount) {
+          const discTag = s.discount_text || `Save ${formatINR(savings)}`;
+          const dateRange = (s.discount_start_date || s.discount_end_date)
+            ? `<span style="font-size:10px; color:var(--clr-text-muted);">${s.discount_start_date || 'Start'} ~ ${s.discount_end_date || 'End'}</span>`
+            : '';
+          discountCell = `
+            <div style="display:flex; flex-direction:column; align-items:flex-end; gap:2px;">
+              <span class="price-discount-val" style="color:#34d399; font-weight:700;">${formatINR(payablePrice)}</span>
+              <span class="badge-discount-savings" style="font-size:11px; background:rgba(16,185,129,0.15); color:#34d399; padding:2px 6px; border-radius:4px;">
+                ${discTag}
+              </span>
+              ${dateRange}
+            </div>
+          `;
+        } else if (s.discount_enabled && s.discount_start_date) {
+          discountCell = `<span class="badge badge-inactive" style="font-size:10px;">Starts ${s.discount_start_date}</span>`;
+        }
 
         const descSnippet = s.description
           ? `<div style="font-size:11px; color:var(--clr-text-muted); max-width:260px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;" title="${escapeHtml(s.description)}">${escapeHtml(s.description)}</div>`
@@ -1371,7 +1384,74 @@ Choose: booked, confirmed, completed, cancelled`,
     renderPriceList(allServices);
   });
 
-  // Add Service Modal Open
+  // Add Service Modal Open & Reset
+  const updateServiceModalDiscountCalculation = () => {
+    const price = Number(document.getElementById('svc-price')?.value) || 0;
+    const enabled = document.getElementById('svc-discount-enabled')?.checked;
+    const type = document.getElementById('svc-discount-type')?.value || 'percentage';
+    const valInput = document.getElementById('svc-discount-value');
+    const valLabel = document.getElementById('svc-discount-value-label');
+    const displayEl = document.getElementById('svc-calculated-price-display');
+    const pill = document.getElementById('svc-discount-status-pill');
+    const controls = document.getElementById('svc-discount-controls');
+
+    if (valLabel) {
+      valLabel.textContent = type === 'percentage' ? 'Discount Value (%) *' : 'Discount Value (₹) *';
+    }
+
+    if (!enabled) {
+      if (controls) controls.style.display = 'none';
+      if (pill) {
+        pill.className = 'badge badge-inactive';
+        pill.textContent = 'No Discount';
+      }
+      if (displayEl) {
+        displayEl.textContent = formatINR(price) + ' (Regular)';
+        displayEl.style.color = '#ffffff';
+      }
+      return { price, payablePrice: price, hasDiscount: false };
+    }
+
+    if (controls) controls.style.display = 'flex';
+    if (pill) {
+      pill.className = 'badge badge-active';
+      pill.textContent = 'Discount Active';
+    }
+
+    const val = parseFloat(valInput?.value) || 0;
+    let payable = price;
+    let savings = 0;
+
+    if (type === 'percentage') {
+      if (val > 0 && val <= 100) {
+        savings = Math.round(price * (val / 100));
+        payable = Math.max(1, price - savings);
+      }
+    } else {
+      if (val > 0 && val < price) {
+        savings = Math.round(val);
+        payable = Math.max(1, price - savings);
+      }
+    }
+
+    if (displayEl) {
+      if (savings > 0) {
+        displayEl.textContent = `${formatINR(payable)} (Save ${formatINR(savings)})`;
+        displayEl.style.color = '#34d399';
+      } else {
+        displayEl.textContent = `${formatINR(price)} (Enter discount value)`;
+        displayEl.style.color = 'var(--clr-text-muted)';
+      }
+    }
+
+    return { price, payablePrice: payable, hasDiscount: savings > 0 };
+  };
+
+  document.getElementById('svc-discount-enabled')?.addEventListener('change', updateServiceModalDiscountCalculation);
+  document.getElementById('svc-discount-type')?.addEventListener('change', updateServiceModalDiscountCalculation);
+  document.getElementById('svc-discount-value')?.addEventListener('input', updateServiceModalDiscountCalculation);
+  document.getElementById('svc-price')?.addEventListener('input', updateServiceModalDiscountCalculation);
+
   const openAddServiceModal = () => {
     document.getElementById('service-modal-title').textContent = 'Add New Salon Service';
     document.getElementById('service-form').reset();
@@ -1379,6 +1459,12 @@ Choose: booked, confirmed, completed, cancelled`,
     document.getElementById('svc-slug').disabled = false;
     document.getElementById('svc-preview-box').style.display = 'none';
     document.getElementById('svc-active').checked = true;
+    document.getElementById('svc-discount-enabled').checked = false;
+    document.getElementById('svc-discount-type').value = 'percentage';
+    document.getElementById('svc-discount-value').value = '';
+    document.getElementById('svc-discount-start').value = '';
+    document.getElementById('svc-discount-end').value = '';
+    updateServiceModalDiscountCalculation();
     openModal('modal-service');
   };
 
@@ -1407,13 +1493,26 @@ Choose: booked, confirmed, completed, cancelled`,
     document.getElementById('svc-slug').disabled = true;
     document.getElementById('svc-name').value = svc.name;
     document.getElementById('svc-price').value = svc.price;
-    document.getElementById('svc-discount').value = svc.discount_price !== null && svc.discount_price !== undefined ? svc.discount_price : '';
     document.getElementById('svc-duration').value = svc.duration_minutes || 30;
     document.getElementById('svc-category').value = svc.category || 'Hair & Grooming';
     document.getElementById('svc-order').value = svc.display_order || 0;
     document.getElementById('svc-desc').value = svc.description || '';
     document.getElementById('svc-image').value = svc.image_url || '';
     document.getElementById('svc-active').checked = Boolean(svc.is_active);
+
+    const discEnabled = Boolean(svc.discount_enabled || (svc.discount_price && svc.discount_price > 0 && svc.discount_price < svc.price));
+    document.getElementById('svc-discount-enabled').checked = discEnabled;
+    document.getElementById('svc-discount-type').value = svc.discount_type || (svc.discount_value ? 'percentage' : 'fixed');
+
+    let discVal = svc.discount_value;
+    if (!discVal && svc.discount_price && svc.discount_price < svc.price) {
+      discVal = svc.price - svc.discount_price;
+      document.getElementById('svc-discount-type').value = 'fixed';
+    }
+    document.getElementById('svc-discount-value').value = discVal || '';
+    document.getElementById('svc-discount-start').value = svc.discount_start_date || '';
+    document.getElementById('svc-discount-end').value = svc.discount_end_date || '';
+    updateServiceModalDiscountCalculation();
 
     const prevBox = document.getElementById('svc-preview-box');
     const prevImg = document.getElementById('svc-preview-img');
@@ -1435,9 +1534,9 @@ Choose: booked, confirmed, completed, cancelled`,
     document.getElementById('view-svc-title').textContent = `Service Details: ${s.name}`;
     const body = document.getElementById('view-svc-body');
     const imgSrc = s.image_url || '/assets/logo.png';
-    const hasDiscount = Boolean(s.discount_price && s.discount_price > 0 && s.discount_price < s.price);
-    const savings = hasDiscount ? s.price - s.discount_price : 0;
-    const pct = hasDiscount ? Math.round((savings / s.price) * 100) : 0;
+    const hasDiscount = Boolean(s.has_discount || (s.discount_price && s.discount_price > 0 && s.discount_price < s.price));
+    const payablePrice = s.payable_price || (hasDiscount ? s.discount_price : s.price);
+    const savings = hasDiscount ? (s.price - payablePrice) : 0;
     const isArchived = Boolean(s.is_archived);
     const isActive = Boolean(s.is_active);
 
@@ -1449,6 +1548,14 @@ Choose: booked, confirmed, completed, cancelled`,
     } else {
       statusHtml = '<span class="badge badge-inactive">Inactive</span>';
     }
+
+    const discountDetailsHtml = hasDiscount
+      ? `${formatINR(payablePrice)} <span style="font-size:11px; background:rgba(16,185,129,0.15); color:#34d399; padding:2px 6px; border-radius:4px;">${s.discount_text ? s.discount_text : `Save ${formatINR(savings)}`}</span>`
+      : 'None (Regular)';
+
+    const discountScheduleHtml = (s.discount_start_date || s.discount_end_date)
+      ? `<div style="font-size:11px; color:var(--clr-text-muted); margin-top:4px;">Valid: ${s.discount_start_date || 'Start'} to ${s.discount_end_date || 'Ongoing'}</div>`
+      : '';
 
     body.innerHTML = `
       <div style="display:flex; gap:16px; align-items:center; margin-bottom:18px; background:rgba(197,160,89,0.06); padding:14px; border-radius:var(--radius-md); border:1px solid var(--clr-border-gold);">
@@ -1466,10 +1573,11 @@ Choose: booked, confirmed, completed, cancelled`,
           <div style="font-size:18px; font-weight:700; color:var(--clr-gold);">${formatINR(s.price)}</div>
         </div>
         <div style="background:var(--clr-bg-input); padding:12px; border-radius:var(--radius-sm); border:1px solid var(--clr-border);">
-          <span style="font-size:11px; text-transform:uppercase; color:var(--clr-text-muted); font-weight:700;">Discount Price</span>
+          <span style="font-size:11px; text-transform:uppercase; color:var(--clr-text-muted); font-weight:700;">Payable Price</span>
           <div style="font-size:18px; font-weight:700; color:${hasDiscount ? '#34d399' : 'var(--clr-text-muted)'};">
-            ${hasDiscount ? `${formatINR(s.discount_price)} <span style="font-size:11px; background:rgba(16,185,129,0.15); padding:2px 6px; border-radius:4px;">-${pct}% OFF</span>` : 'None (Regular)'}
+            ${discountDetailsHtml}
           </div>
+          ${discountScheduleHtml}
         </div>
         <div style="background:var(--clr-bg-input); padding:12px; border-radius:var(--radius-sm); border:1px solid var(--clr-border);">
           <span style="font-size:11px; text-transform:uppercase; color:var(--clr-text-muted); font-weight:700;">Service Duration</span>
@@ -1547,13 +1655,18 @@ Choose: booked, confirmed, completed, cancelled`,
     const slug = document.getElementById('svc-slug').value.trim();
     const name = document.getElementById('svc-name').value.trim();
     const priceVal = document.getElementById('svc-price').value;
-    const discountVal = document.getElementById('svc-discount').value.trim();
     const duration_minutes = Number(document.getElementById('svc-duration').value) || 30;
     const category = document.getElementById('svc-category').value;
     const display_order = Number(document.getElementById('svc-order').value) || 0;
     const description = document.getElementById('svc-desc').value.trim();
     const image_url = document.getElementById('svc-image').value.trim();
     const is_active = document.getElementById('svc-active').checked ? 1 : 0;
+
+    const discount_enabled = document.getElementById('svc-discount-enabled')?.checked ? 1 : 0;
+    const discount_type = document.getElementById('svc-discount-type')?.value || 'percentage';
+    const discountVal = document.getElementById('svc-discount-value')?.value.trim();
+    const discount_start_date = document.getElementById('svc-discount-start')?.value || null;
+    const discount_end_date = document.getElementById('svc-discount-end')?.value || null;
 
     if (!name) {
       showToast('Service name is required.', 'danger');
@@ -1565,15 +1678,27 @@ Choose: booked, confirmed, completed, cancelled`,
       return;
     }
 
-    let discount_price = null;
-    if (discountVal !== '') {
-      discount_price = Number(discountVal);
-      if (isNaN(discount_price) || discount_price < 0) {
-        showToast('Discount price cannot be negative.', 'danger');
+    let discount_value = 0;
+    if (discount_enabled) {
+      discount_value = Number(discountVal);
+      if (isNaN(discount_value) || discount_value <= 0) {
+        showToast('Please enter a valid positive discount value.', 'danger');
         return;
       }
-      if (discount_price >= price) {
-        showToast(`Discount price (₹${discount_price}) must be strictly less than Regular Price (₹${price}).`, 'danger');
+      if (discount_type === 'percentage') {
+        if (discount_value >= 100) {
+          showToast('Percentage discount must be less than 100%.', 'danger');
+          return;
+        }
+      } else if (discount_type === 'fixed') {
+        if (discount_value >= price) {
+          showToast(`Fixed discount (₹${discount_value}) must be strictly less than Regular Price (₹${price}).`, 'danger');
+          return;
+        }
+      }
+
+      if (discount_start_date && discount_end_date && discount_end_date < discount_start_date) {
+        showToast('Discount End Date cannot be earlier than Start Date.', 'danger');
         return;
       }
     }
@@ -1582,7 +1707,11 @@ Choose: booked, confirmed, completed, cancelled`,
       id: existingId || slug,
       name,
       price,
-      discount_price,
+      discount_enabled,
+      discount_type,
+      discount_value,
+      discount_start_date,
+      discount_end_date,
       duration_minutes,
       category,
       display_order,
