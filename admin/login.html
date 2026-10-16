@@ -1,0 +1,165 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Admin Login — Sri Devi One Saloon</title>
+  <link rel="icon" type="image/png" href="/assets/logo.png" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Playfair+Display:wght@700&display=swap" rel="stylesheet" />
+  <script src="https://unpkg.com/lucide@latest"></script>
+  <link rel="stylesheet" href="/admin/admin.css" />
+</head>
+<body>
+  <div class="auth-wrapper">
+    <div class="auth-card">
+      <div class="auth-header">
+        <img src="/assets/logo.png" alt="Sri Devi One Saloon" class="auth-logo" onerror="this.src='/assets/logo.JPEG'" />
+        <h1 class="auth-title">Sri Devi One Saloon</h1>
+        <p class="auth-subtitle">Salon Owner &amp; Content Management Portal</p>
+      </div>
+
+      <div id="alert-box" class="alert alert-danger" style="display: none; margin-bottom: 18px;">
+        <span data-lucide="alert-circle" style="width: 18px; height: 18px; flex-shrink: 0;"></span>
+        <span id="alert-msg"></span>
+      </div>
+
+      <form id="login-form" class="auth-form" novalidate>
+        <div class="form-group">
+          <label for="username" class="form-label">Username or Email</label>
+          <input
+            type="text"
+            id="username"
+            name="username"
+            class="form-control"
+            placeholder="admin or your-email@gmail.com"
+            required
+            autocomplete="username"
+          />
+        </div>
+
+        <div class="form-group">
+          <label for="password" class="form-label">Password</label>
+          <div class="password-input-wrap">
+            <input
+              type="password"
+              id="password"
+              name="password"
+              class="form-control"
+              placeholder="Enter your password"
+              required
+              autocomplete="current-password"
+            />
+            <button type="button" class="password-toggle-btn" id="toggle-password" title="Show or hide password" aria-label="Toggle password visibility">
+              <span data-lucide="eye" id="toggle-icon"></span>
+            </button>
+          </div>
+        </div>
+
+        <div class="form-checkbox-row">
+          <label class="checkbox-label">
+            <input type="checkbox" id="remember-me" name="remember-me" />
+            <span>Remember me</span>
+          </label>
+          <a href="/admin/forgot-password" class="forgot-link">Forgot Password?</a>
+        </div>
+
+        <button type="submit" class="btn btn-primary btn-block" id="login-submit-btn">
+          <span id="btn-text">Sign In to Dashboard</span>
+          <span id="btn-spinner" style="display: none;">
+            <span data-lucide="loader" style="width: 16px; height: 16px; animation: spin 1s linear infinite;"></span>
+          </span>
+        </button>
+      </form>
+
+      <div class="auth-footer">
+        <a href="/" style="display: inline-flex; align-items: center; gap: 6px; color: var(--clr-text-muted);">
+          <span data-lucide="arrow-left" style="width: 14px; height: 14px;"></span>
+          Back to Public Website
+        </a>
+      </div>
+    </div>
+  </div>
+
+  <style>
+    @keyframes spin { 100% { transform: rotate(360deg); } }
+  </style>
+
+  <script>
+    lucide.createIcons();
+
+    // Show/Hide password toggle
+    const toggleBtn = document.getElementById('toggle-password');
+    const pwdInput = document.getElementById('password');
+    toggleBtn.addEventListener('click', () => {
+      const isPassword = pwdInput.type === 'password';
+      pwdInput.type = isPassword ? 'text' : 'password';
+      toggleBtn.innerHTML = isPassword ? '<span data-lucide="eye-off"></span>' : '<span data-lucide="eye"></span>';
+      lucide.createIcons();
+    });
+
+    // Check for success message from redirect (e.g. after reset)
+    const urlParams = new URLSearchParams(window.location.search);
+    if (urlParams.has('msg')) {
+      const alertBox = document.getElementById('alert-box');
+      alertBox.className = 'alert alert-success';
+      alertBox.style.display = 'flex';
+      document.getElementById('alert-msg').textContent = urlParams.get('msg');
+    }
+
+    // Login form submission
+    const loginForm = document.getElementById('login-form');
+    const submitBtn = document.getElementById('login-submit-btn');
+    const btnText = document.getElementById('btn-text');
+    const btnSpinner = document.getElementById('btn-spinner');
+    const alertBox = document.getElementById('alert-box');
+    const alertMsg = document.getElementById('alert-msg');
+
+    loginForm.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      alertBox.style.display = 'none';
+
+      const username = document.getElementById('username').value.trim();
+      const password = document.getElementById('password').value;
+      const remember = document.getElementById('remember-me').checked;
+
+      if (!username || !password) {
+        alertBox.className = 'alert alert-danger';
+        alertBox.style.display = 'flex';
+        alertMsg.textContent = 'Please enter both username/email and password.';
+        return;
+      }
+
+      submitBtn.disabled = true;
+      btnText.style.display = 'none';
+      btnSpinner.style.display = 'inline-flex';
+
+      try {
+        const res = await fetch('/api/admin/login', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ username, password, remember })
+        });
+        const data = await res.json();
+
+        if (!res.ok || !data.success) {
+          throw new Error(data.error || 'Invalid username or password.');
+        }
+
+        // Redirect to admin dashboard
+        window.location.href = '/admin';
+      } catch (err) {
+        alertBox.className = 'alert alert-danger';
+        alertBox.style.display = 'flex';
+        alertMsg.textContent = err.message || 'Login failed. Please verify your credentials.';
+      } finally {
+        submitBtn.disabled = false;
+        btnText.style.display = 'inline';
+        btnSpinner.style.display = 'none';
+        lucide.createIcons();
+      }
+    });
+  </script>
+</body>
+</html>

@@ -452,26 +452,46 @@ function initPriceFilter() {
 ═══════════════════════════════════════════════ */
 function initServiceBookButtons() {
   const bookBtns = qsa('.book-service-btn');
-  const bookingServiceEl = qs('#booking-service');
-
-  if (!bookBtns.length || !bookingServiceEl) return;
+  if (!bookBtns.length) return;
 
   bookBtns.forEach(btn => {
     btn.addEventListener('click', e => {
       e.preventDefault();
-      const service = btn.dataset.service;
-      if (!service) return;
+      const serviceTarget = (btn.dataset.service || '').toLowerCase();
+      if (!serviceTarget) return;
 
-      // Map service name to option value
-      const matchingOption = Array.from(bookingServiceEl.options).find(opt =>
-        opt.value.toLowerCase().startsWith(service.toLowerCase())
-      );
+      // Map service name to checkbox in booking form
+      const checkboxes = qsa('.service-checkbox');
+      let matchedCb = null;
 
-      if (matchingOption) {
-        bookingServiceEl.value = matchingOption.value;
+      checkboxes.forEach(cb => {
+        const id = (cb.value || '').toLowerCase();
+        const name = (cb.dataset.name || '').toLowerCase();
+        if (
+          id === serviceTarget ||
+          name === serviceTarget ||
+          (serviceTarget === 'haircut' && (id === 'cutting' || name.includes('cutting'))) ||
+          (serviceTarget.includes('combo') && (id === 'combo' || name.includes('combo'))) ||
+          (serviceTarget.includes('tan') && (id === 'tan_pack' || name.includes('tan'))) ||
+          (serviceTarget.includes('lite') && (id === 'lite_facial' || name.includes('lite'))) ||
+          (serviceTarget.includes('full') && (id === 'full_facial' || name.includes('full'))) ||
+          (serviceTarget.includes('scrub') && (id === 'scrub' || name.includes('scrub'))) ||
+          (serviceTarget.includes('shaving') && !serviceTarget.includes('combo') && (id === 'shaving' || name.includes('shaving')))
+        ) {
+          matchedCb = cb;
+        }
+      });
+
+      if (matchedCb) {
+        matchedCb.checked = true;
+        const card = matchedCb.closest('.service-select-card');
+        if (card) card.classList.add('is-selected');
+
+        // Dispatch change event so live total updates immediately
+        matchedCb.dispatchEvent(new Event('change', { bubbles: true }));
       }
 
-      // Scroll to booking
+      // Smooth scroll to booking form
       const booking = qs('#booking');
       if (booking) {
         const prefersReduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
@@ -483,7 +503,7 @@ function initServiceBookButtons() {
 
 /* ═══════════════════════════════════════════════
    12. BOOKING FORM
-═══════════════════════════════════════════════ */
+   ═══════════════════════════════════════════════ */
 function initBookingForm() {
   const form = qs('#booking-form');
   if (!form) return;
@@ -491,7 +511,6 @@ function initBookingForm() {
   const nameEl    = qs('#booking-name', form);
   const phoneEl   = qs('#booking-phone', form);
   const emailEl   = qs('#booking-email', form);
-  const serviceEl = qs('#booking-service', form);
   const dateEl    = qs('#booking-date', form);
   const timeEl    = qs('#booking-time', form);
   const msgEl     = qs('#booking-message', form);
@@ -508,19 +527,139 @@ function initBookingForm() {
   const summaryDetails   = qs('#summary-details', summaryEl);
   const previewBtn       = qs('#preview-booking-btn');
 
+  const liveTotalEl       = qs('#live-total-price');
+  const liveServicesEl    = qs('#live-selected-services-text');
+  const liveSummaryBar    = qs('#booking-live-summary');
+  const gridContainer     = qs('#service-selection-grid', form);
+
   if (dateEl) dateEl.min = todayString();
+
+  /**
+   * Recalculates total and updates the live service selection summary immediately.
+   */
+  function updateServicesSelection() {
+    let total = 0;
+    const selectedList = [];
+    const currentCheckboxes = qsa('.service-checkbox', form);
+
+    currentCheckboxes.forEach(cb => {
+      const card = cb.closest('.service-select-card');
+      const price = parseInt(cb.dataset.price, 10) || 0;
+      const name = cb.dataset.name || cb.value;
+
+      if (cb.checked) {
+        if (card) card.classList.add('is-selected');
+        total += price;
+        selectedList.push({ id: cb.value, name, price });
+      } else {
+        if (card) card.classList.remove('is-selected');
+      }
+    });
+
+    if (liveTotalEl) {
+      liveTotalEl.textContent = `₹${total}`;
+    }
+
+    if (liveServicesEl) {
+      if (selectedList.length > 0) {
+        liveServicesEl.textContent = selectedList.map(s => `${s.name} (₹${s.price})`).join(', ');
+        liveServicesEl.classList.remove('empty');
+        if (liveSummaryBar) liveSummaryBar.classList.add('has-selection');
+        if (serviceErr) clearError(serviceErr);
+      } else {
+        liveServicesEl.textContent = 'None selected';
+        liveServicesEl.classList.add('empty');
+        if (liveSummaryBar) liveSummaryBar.classList.remove('has-selection');
+      }
+    }
+
+    return { total, selectedList, count: selectedList.length };
+  }
+
+  function bindCheckboxListeners() {
+    const currentCheckboxes = qsa('.service-checkbox', form);
+    currentCheckboxes.forEach(cb => {
+      cb.addEventListener('change', () => {
+        updateServicesSelection();
+      });
+    });
+  }
+
+  async function hydrateDynamicServices() {
+    if (!gridContainer) return;
+    try {
+      const res = await fetch('/api/services');
+      if (!res.ok) return;
+      const data = await res.json();
+      if (!data.success || !Array.isArray(data.services) || data.services.length === 0) return;
+
+      const previouslyChecked = new Set(
+        Array.from(qsa('.service-checkbox', form))
+          .filter(cb => cb.checked)
+          .map(cb => cb.value)
+      );
+
+      gridContainer.innerHTML = data.services.map(svc => {
+        const isChecked = previouslyChecked.has(svc.id);
+        const cardSelectedClass = isChecked ? ' is-selected' : '';
+        const checkedAttr = isChecked ? ' checked' : '';
+        const descHtml = svc.description ? `<p class="service-card-desc">${escapeHtml(svc.description)}</p>` : '';
+        const discountHtml = svc.discount_price ? `<span class="service-card-old-price">₹${svc.discount_price}</span>` : '';
+
+        return `
+          <label class="service-select-card${cardSelectedClass}" for="svc-${svc.id}" data-service-id="${svc.id}" data-price="${svc.price}" data-name="${escapeHtml(svc.name)}">
+            <input type="checkbox" id="svc-${svc.id}" name="services" value="${svc.id}" class="service-checkbox sr-only" data-price="${svc.price}" data-name="${escapeHtml(svc.name)}"${checkedAttr} />
+            <div class="service-card-box">
+              <div class="service-card-check" aria-hidden="true">
+                <span data-lucide="check" class="icon-check"></span>
+              </div>
+              <div class="service-card-content">
+                <div class="service-card-header">
+                  <span class="service-card-name" id="svc-${svc.id}-name">${escapeHtml(svc.name)}</span>
+                  <span class="service-card-price" id="svc-${svc.id}-price">
+                    ${discountHtml}₹${svc.price}
+                  </span>
+                </div>
+                ${descHtml}
+                <div class="service-card-meta">
+                  <span class="service-card-duration">
+                    <span data-lucide="clock" class="icon-clock-xs" aria-hidden="true"></span>
+                    ${svc.duration || svc.duration_minutes || 30} mins
+                  </span>
+                  <span class="service-card-category">${escapeHtml(svc.category || 'Hair & Grooming')}</span>
+                </div>
+              </div>
+            </div>
+          </label>
+        `;
+      }).join('');
+
+      initIcons();
+      bindCheckboxListeners();
+      updateServicesSelection();
+    } catch (e) {
+      console.warn('Dynamic services hydration fallback used:', e);
+    }
+  }
+
+  // Initial calculation on static markup and dynamic hydration
+  bindCheckboxListeners();
+  updateServicesSelection();
+  hydrateDynamicServices();
 
   if (previewBtn) {
     previewBtn.addEventListener('click', () => {
       if (!validateBookingForm()) return;
+      const { selectedList, total } = updateServicesSelection();
       buildSummary(summaryDetails, {
-        'Name':    nameEl.value.trim(),
-        'Phone':   phoneEl ? phoneEl.value.trim() : '',
-        'Email':   emailEl.value.trim(),
-        'Service': serviceEl.value,
-        'Date':    formatDateReadable(dateEl.value),
-        'Time':    formatTime12Hour(timeEl.value),
-        'Note':    msgEl ? msgEl.value.trim() : ''
+        'Name':              nameEl.value.trim(),
+        'Phone':             phoneEl ? phoneEl.value.trim() : '',
+        'Email':             emailEl.value.trim(),
+        'Selected Services': selectedList.map(s => `${s.name} (₹${s.price})`).join(', '),
+        'Total Price':       `₹${total}`,
+        'Preferred Date':    formatDateReadable(dateEl.value),
+        'Preferred Time':    formatTime12Hour(timeEl.value),
+        'Notes':             msgEl ? msgEl.value.trim() : ''
       });
       if (summaryEl) summaryEl.removeAttribute('hidden');
     });
@@ -556,11 +695,12 @@ function initBookingForm() {
       setValid(emailEl, emailErr);
     }
 
-    if (!serviceEl || !serviceEl.value) {
-      setInvalid(serviceEl, serviceErr, 'Please select a service.');
+    const { selectedList } = updateServicesSelection();
+    if (selectedList.length === 0) {
+      setInvalid(null, serviceErr, 'Please select at least one salon service.');
       valid = false;
     } else {
-      setValid(serviceEl, serviceErr);
+      setValid(null, serviceErr);
     }
 
     if (!dateEl || !dateEl.value) {
@@ -587,11 +727,15 @@ function initBookingForm() {
     e.preventDefault();
     if (!validateBookingForm()) return;
 
+    const { selectedList, total } = updateServicesSelection();
+
     const payload = {
       name: nameEl.value.trim(),
       phone: phoneEl ? phoneEl.value.trim() : '',
       email: emailEl.value.trim(),
-      service: serviceEl.value,
+      services: selectedList.map(s => s.id),
+      service: selectedList.map(s => `${s.name} (₹${s.price})`).join(', '),
+      total_price: total,
       appointment_date: dateEl.value,
       appointment_time: timeEl.value,
       notes: msgEl ? msgEl.value.trim() : ''
@@ -617,11 +761,18 @@ function initBookingForm() {
         throw new Error(data.error || 'Unable to book appointment right now.');
       }
       if (statusEl) {
-        statusEl.textContent = data.message || `Your appointment for ${formatDateReadable(payload.appointment_date)} at ${formatTime12Hour(payload.appointment_time)} has been received. A confirmation email is on its way.`;
+        statusEl.textContent = data.message || `Your appointment for ${formatDateReadable(payload.appointment_date)} at ${formatTime12Hour(payload.appointment_time)} has been received. Total: ₹${data.total_price || total}. A confirmation email has been sent.`;
         statusEl.classList.add('success');
         statusEl.classList.remove('error');
       }
       form.reset();
+      // Uncheck all service checkboxes and reset live total
+      serviceCheckboxes.forEach(cb => {
+        cb.checked = false;
+        const card = cb.closest('.service-select-card');
+        if (card) card.classList.remove('is-selected');
+      });
+      updateServicesSelection();
       if (summaryEl) summaryEl.setAttribute('hidden', 'hidden');
     } catch (error) {
       if (statusEl) {
@@ -638,7 +789,7 @@ function initBookingForm() {
     }
   });
 
-  [nameEl, phoneEl, emailEl, serviceEl, dateEl, timeEl].forEach(el => {
+  [nameEl, phoneEl, emailEl, dateEl, timeEl].forEach(el => {
     if (!el) return;
     const clearFeedback = () => {
       const errorId = el.getAttribute('aria-describedby');

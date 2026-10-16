@@ -1,0 +1,827 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Admin Dashboard &amp; CMS — Sri Devi One Saloon</title>
+  <link rel="icon" type="image/png" href="/assets/logo.png" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Playfair+Display:wght@700&display=swap" rel="stylesheet" />
+  <script src="https://unpkg.com/lucide@latest"></script>
+  <link rel="stylesheet" href="/admin/admin.css" />
+</head>
+<body>
+  <div class="app-layout">
+
+    <!-- ═════════════════════════════════════════════════════════════
+         SIDEBAR NAVIGATION
+         ═════════════════════════════════════════════════════════════ -->
+    <aside class="app-sidebar" id="app-sidebar">
+      <div class="sidebar-brand">
+        <img src="/assets/logo.png" alt="Logo" class="sidebar-logo" onerror="this.src='/assets/logo.JPEG'" />
+        <div class="brand-text-wrap">
+          <span class="brand-name">Sri Devi One</span>
+          <span class="brand-role">Admin Portal &amp; CMS</span>
+        </div>
+      </div>
+
+      <nav class="sidebar-nav" id="sidebar-nav">
+        <div class="nav-item active" data-tab="dashboard">
+          <span data-lucide="layout-dashboard"></span>
+          <span>Dashboard</span>
+        </div>
+        <div class="nav-item" data-tab="appointments">
+          <span data-lucide="calendar"></span>
+          <span>Appointments</span>
+        </div>
+        <div class="nav-item" data-tab="services">
+          <span data-lucide="scissors"></span>
+          <span>Services</span>
+        </div>
+        <div class="nav-item" data-tab="prices">
+          <span data-lucide="tag"></span>
+          <span>Price List &amp; Catalogue</span>
+        </div>
+        <div class="nav-item" data-tab="content">
+          <span data-lucide="globe"></span>
+          <span>Website Content</span>
+        </div>
+        <div class="nav-item" data-tab="gallery">
+          <span data-lucide="image"></span>
+          <span>Gallery &amp; Photos</span>
+        </div>
+        <div class="nav-item" data-tab="templates">
+          <span data-lucide="mail"></span>
+          <span>Email &amp; Reminders</span>
+        </div>
+        <div class="nav-item" data-tab="activity">
+          <span data-lucide="history"></span>
+          <span>Activity Logs</span>
+        </div>
+        <div class="nav-item" data-tab="settings">
+          <span data-lucide="settings"></span>
+          <span>Admin Settings</span>
+        </div>
+      </nav>
+
+      <div class="sidebar-footer">
+        <div class="admin-profile-pill">
+          <div class="admin-avatar" id="sidebar-avatar">A</div>
+          <div class="admin-details">
+            <span class="admin-user" id="sidebar-username">admin</span>
+            <span class="admin-badge">Administrator</span>
+          </div>
+        </div>
+        <button type="button" class="btn btn-secondary btn-sm" id="logout-btn" title="Sign out of portal">
+          <span data-lucide="log-out" style="width: 14px; height: 14px;"></span>
+        </button>
+      </div>
+    </aside>
+
+    <!-- Mobile Drawer Overlay -->
+    <div id="mobile-overlay" style="display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.7); z-index: 45;"></div>
+
+    <!-- ═════════════════════════════════════════════════════════════
+         MAIN APP CONTENT
+         ═════════════════════════════════════════════════════════════ -->
+    <main class="app-main">
+      <header class="app-topbar">
+        <div class="topbar-left">
+          <button type="button" class="mobile-toggle" id="mobile-toggle-btn" aria-label="Toggle navigation">
+            <span data-lucide="menu"></span>
+          </button>
+          <h2 class="topbar-title" id="page-heading">Dashboard Overview</h2>
+        </div>
+
+        <div class="topbar-right">
+          <div class="time-badge">
+            <span data-lucide="clock" style="width: 13px; height: 13px; color: var(--clr-gold);"></span>
+            <span id="live-clock">--:-- --</span>
+          </div>
+          <a href="/" target="_blank" class="btn btn-outline-gold btn-sm">
+            <span data-lucide="external-link" style="width: 14px; height: 14px;"></span>
+            <span>View Website</span>
+          </a>
+        </div>
+      </header>
+
+      <div class="content-container">
+
+        <!-- Forced Password Change Banner -->
+        <div id="password-warning-banner" class="alert alert-warning" style="display: none; margin-bottom: 20px;">
+          <span data-lucide="shield-alert" style="width: 20px; height: 20px; flex-shrink: 0;"></span>
+          <div style="flex: 1;">
+            <strong>Security Notice:</strong> You are using the default administrator password. Please change it now to protect your salon management portal.
+          </div>
+          <button type="button" class="btn btn-primary btn-sm" id="banner-change-pwd-btn">Change Password</button>
+        </div>
+
+        <!-- ═════════════════════════════════════════════════════════
+             TAB 1: DASHBOARD OVERVIEW
+             ═════════════════════════════════════════════════════════ -->
+        <section class="tab-pane active" id="pane-dashboard">
+          <div class="stats-grid">
+            <div class="stat-card">
+              <div class="stat-info">
+                <span class="stat-label">Total Bookings</span>
+                <span class="stat-value" id="stat-total">0</span>
+              </div>
+              <div class="stat-icon"><span data-lucide="calendar"></span></div>
+            </div>
+
+            <div class="stat-card">
+              <div class="stat-info">
+                <span class="stat-label">Today's Visits</span>
+                <span class="stat-value" id="stat-today">0</span>
+              </div>
+              <div class="stat-icon" style="color: #60a5fa; background: rgba(96,165,250,0.1);"><span data-lucide="calendar-check"></span></div>
+            </div>
+
+            <div class="stat-card">
+              <div class="stat-info">
+                <span class="stat-label">Upcoming</span>
+                <span class="stat-value" id="stat-upcoming">0</span>
+              </div>
+              <div class="stat-icon" style="color: #f59e0b; background: rgba(245,158,11,0.1);"><span data-lucide="clock"></span></div>
+            </div>
+
+            <div class="stat-card">
+              <div class="stat-info">
+                <span class="stat-label">Completed</span>
+                <span class="stat-value" id="stat-completed">0</span>
+              </div>
+              <div class="stat-icon" style="color: #10b981; background: rgba(16,185,129,0.1);"><span data-lucide="check-circle-2"></span></div>
+            </div>
+
+            <div class="stat-card">
+              <div class="stat-info">
+                <span class="stat-label">Active Services</span>
+                <span class="stat-value" id="stat-services">0</span>
+              </div>
+              <div class="stat-icon"><span data-lucide="scissors"></span></div>
+            </div>
+
+            <div class="stat-card">
+              <div class="stat-info">
+                <span class="stat-label">Pending Emails</span>
+                <span class="stat-value" id="stat-pending-emails">0</span>
+              </div>
+              <div class="stat-icon" style="color: #a78bfa; background: rgba(167,139,250,0.1);"><span data-lucide="mail"></span></div>
+            </div>
+          </div>
+
+          <!-- Quick Action Buttons -->
+          <div class="quick-actions-bar">
+            <div class="quick-actions-title">⚡ Quick Management Actions</div>
+            <div class="quick-actions-list">
+              <button type="button" class="btn btn-secondary btn-sm" id="qa-add-service">
+                <span data-lucide="plus-circle" style="width: 14px; height: 14px; color: var(--clr-gold);"></span>
+                Add New Service
+              </button>
+              <button type="button" class="btn btn-secondary btn-sm" id="qa-view-appointments">
+                <span data-lucide="calendar" style="width: 14px; height: 14px; color: #60a5fa;"></span>
+                View Appointments
+              </button>
+              <button type="button" class="btn btn-secondary btn-sm" id="qa-update-prices">
+                <span data-lucide="tag" style="width: 14px; height: 14px; color: #f59e0b;"></span>
+                Update Prices
+              </button>
+              <button type="button" class="btn btn-secondary btn-sm" id="qa-edit-content">
+                <span data-lucide="globe" style="width: 14px; height: 14px; color: #10b981;"></span>
+                Edit Website Content
+              </button>
+              <button type="button" class="btn btn-secondary btn-sm" id="qa-upload-images">
+                <span data-lucide="image" style="width: 14px; height: 14px; color: #ec4899;"></span>
+                Upload Salon Photos
+              </button>
+              <button type="button" class="btn btn-secondary btn-sm" id="qa-manage-reminders">
+                <span data-lucide="mail" style="width: 14px; height: 14px; color: #a78bfa;"></span>
+                Email Templates
+              </button>
+              <button type="button" class="btn btn-secondary btn-sm" id="qa-change-password">
+                <span data-lucide="key" style="width: 14px; height: 14px; color: var(--clr-gold-light);"></span>
+                Change Password
+              </button>
+            </div>
+          </div>
+
+          <!-- Recent Bookings Table -->
+          <div class="table-card">
+            <div class="table-header-bar">
+              <h3 class="table-title">Recent Customer Bookings</h3>
+              <button type="button" class="btn btn-outline-gold btn-sm" id="view-all-bookings-btn">View All Bookings</button>
+            </div>
+            <div class="table-responsive">
+              <table class="data-table">
+                <thead>
+                  <tr>
+                    <th>ID</th>
+                    <th>Customer</th>
+                    <th>Phone</th>
+                    <th>Services</th>
+                    <th>Total</th>
+                    <th>Date &amp; Time</th>
+                    <th>Status</th>
+                    <th>Actions</th>
+                  </tr>
+                </thead>
+                <tbody id="recent-bookings-tbody">
+                  <tr><td colspan="8" style="text-align: center; color: var(--clr-text-muted); padding: 30px;">Loading bookings...</td></tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </section>
+
+        <!-- ═════════════════════════════════════════════════════════
+             TAB 2: APPOINTMENTS MANAGEMENT
+             ═════════════════════════════════════════════════════════ -->
+        <section class="tab-pane" id="pane-appointments">
+          <div class="table-card">
+            <div class="table-header-bar">
+              <h3 class="table-title">All Customer Appointments</h3>
+              <div class="table-actions">
+                <div class="search-box">
+                  <span data-lucide="search"></span>
+                  <input type="text" id="appointment-search" placeholder="Search customer, phone, email..." />
+                </div>
+                <select id="appointment-status-filter" class="form-control" style="width: 150px; padding: 7px 10px; font-size: 13px;">
+                  <option value="">All Statuses</option>
+                  <option value="booked">Booked</option>
+                  <option value="confirmed">Confirmed</option>
+                  <option value="completed">Completed</option>
+                  <option value="cancelled">Cancelled</option>
+                </select>
+                <input type="date" id="appointment-date-filter" class="form-control" style="width: 150px; padding: 7px 10px; font-size: 13px;" />
+                <button type="button" class="btn btn-secondary btn-sm" id="export-appointments-csv" title="Export current list to CSV">
+                  <span data-lucide="download" style="width: 14px; height: 14px;"></span>
+                  Export
+                </button>
+              </div>
+            </div>
+
+            <div class="table-responsive">
+              <table class="data-table">
+                <thead>
+                  <tr>
+                    <th>ID</th>
+                    <th>Customer</th>
+                    <th>Phone &amp; Email</th>
+                    <th>Services Booked</th>
+                    <th>Total Price</th>
+                    <th>Date &amp; Time</th>
+                    <th>Status</th>
+                    <th>Email Deliveries</th>
+                    <th>Actions</th>
+                  </tr>
+                </thead>
+                <tbody id="appointments-tbody">
+                  <tr><td colspan="9" style="text-align: center; color: var(--clr-text-muted); padding: 30px;">Loading appointments...</td></tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </section>
+
+        <!-- ═════════════════════════════════════════════════════════
+             TAB 3: SERVICES CRUD
+             ═════════════════════════════════════════════════════════ -->
+        <section class="tab-pane" id="pane-services">
+          <div class="table-card">
+            <div class="table-header-bar">
+              <div style="display: flex; align-items: center; gap: 12px;">
+                <h3 class="table-title">Salon Service Catalogue</h3>
+                <span class="badge badge-active" id="services-count-badge">0 Services</span>
+              </div>
+              <div class="table-actions">
+                <select id="services-category-filter" class="form-control" style="width: 160px; padding: 7px 10px; font-size: 13px;">
+                  <option value="">All Categories</option>
+                  <option value="Hair & Grooming">Hair &amp; Grooming</option>
+                  <option value="Skin Care">Skin Care</option>
+                  <option value="Combos">Combos</option>
+                </select>
+                <button type="button" class="btn btn-primary btn-sm" id="open-add-service-modal">
+                  <span data-lucide="plus" style="width: 14px; height: 14px;"></span>
+                  Add New Service
+                </button>
+              </div>
+            </div>
+
+            <div class="table-responsive">
+              <table class="data-table">
+                <thead>
+                  <tr>
+                    <th style="width: 60px;">Image</th>
+                    <th>Service Name</th>
+                    <th>Category</th>
+                    <th>Duration</th>
+                    <th>Regular Price</th>
+                    <th>Discount Price</th>
+                    <th>Status</th>
+                    <th>Order</th>
+                    <th>Actions</th>
+                  </tr>
+                </thead>
+                <tbody id="services-tbody">
+                  <tr><td colspan="9" style="text-align: center; color: var(--clr-text-muted); padding: 30px;">Loading services...</td></tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </section>
+
+        <!-- ═════════════════════════════════════════════════════════
+             TAB 4: PRICE LIST & BULK UPDATE
+             ═════════════════════════════════════════════════════════ -->
+        <section class="tab-pane" id="pane-prices">
+          <div class="table-card">
+            <div class="table-header-bar">
+              <div>
+                <h3 class="table-title">Price List &amp; Bulk Pricing Manager</h3>
+                <p style="font-size: 12px; color: var(--clr-text-muted); margin-top: 2px;">
+                  Update regular prices, promotional discounts, and active visibility for multiple services in one session.
+                </p>
+              </div>
+              <div class="table-actions">
+                <button type="button" class="btn btn-primary" id="save-bulk-prices-btn">
+                  <span data-lucide="save" style="width: 14px; height: 14px;"></span>
+                  Save All Price Changes
+                </button>
+              </div>
+            </div>
+
+            <div class="table-responsive">
+              <table class="data-table" id="bulk-prices-table">
+                <thead>
+                  <tr>
+                    <th>Service Name</th>
+                    <th>Category</th>
+                    <th>Regular Price (₹)</th>
+                    <th>Promo Discount Price (₹)</th>
+                    <th>Display Order</th>
+                    <th>Visibility</th>
+                  </tr>
+                </thead>
+                <tbody id="bulk-prices-tbody">
+                  <tr><td colspan="6" style="text-align: center; color: var(--clr-text-muted); padding: 30px;">Loading pricing catalogue...</td></tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </section>
+
+        <!-- ═════════════════════════════════════════════════════════
+             TAB 5: WEBSITE CONTENT CMS
+             ═════════════════════════════════════════════════════════ -->
+        <section class="tab-pane" id="pane-content">
+          <div class="table-card" style="padding: 24px;">
+            <div style="margin-bottom: 22px; border-bottom: 1px solid var(--clr-border); padding-bottom: 14px; display: flex; justify-content: space-between; align-items: center;">
+              <div>
+                <h3 class="table-title">Public Website Content &amp; Salon Info</h3>
+                <p style="font-size: 12px; color: var(--clr-text-muted);">
+                  Update salon contact information, opening hours, headings, and branding text without writing code.
+                </p>
+              </div>
+              <button type="button" class="btn btn-primary" id="save-content-btn">
+                <span data-lucide="save" style="width: 14px; height: 14px;"></span>
+                Save Website Changes
+              </button>
+            </div>
+
+            <form id="content-cms-form" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 20px;">
+              <div class="form-group">
+                <label class="form-label">Salon Business Name</label>
+                <input type="text" id="cnt-salon_name" class="form-control" value="Sri Devi One Saloon" />
+              </div>
+
+              <div class="form-group">
+                <label class="form-label">Branding Tagline</label>
+                <input type="text" id="cnt-tagline" class="form-control" value="Luxury Barbershop &amp; Styling" />
+              </div>
+
+              <div class="form-group">
+                <label class="form-label">Public Contact Phone</label>
+                <input type="text" id="cnt-phone" class="form-control" value="+91 73961 44248" />
+              </div>
+
+              <div class="form-group">
+                <label class="form-label">Public Contact Email</label>
+                <input type="email" id="cnt-email" class="form-control" value="chakravarthy.atipamula@gmail.com" />
+              </div>
+
+              <div class="form-group" style="grid-column: 1 / -1;">
+                <label class="form-label">Physical Salon Address</label>
+                <input type="text" id="cnt-address" class="form-control" value="Bommuru Centre, Near NTR Statue, Rajuvolu Road, Kotta Bommuru, AP 533124, India" />
+              </div>
+
+              <div class="form-group" style="grid-column: 1 / -1;">
+                <label class="form-label">Google Maps Location URL</label>
+                <input type="url" id="cnt-maps_url" class="form-control" value="https://maps.app.goo.gl/suHNM6yaQBY29TX8A" />
+              </div>
+
+              <div class="form-group">
+                <label class="form-label">Operating / Opening Hours</label>
+                <input type="text" id="cnt-opening_hours" class="form-control" value="Mon – Sun: 7:00 AM – 9:30 PM" />
+              </div>
+
+              <div class="form-group">
+                <label class="form-label">Welcome Modal Heading</label>
+                <input type="text" id="cnt-welcome_heading" class="form-control" value="Sri Devi One Saloon" />
+              </div>
+
+              <div class="form-group" style="grid-column: 1 / -1;">
+                <label class="form-label">Welcome Tagline / Quote</label>
+                <textarea id="cnt-welcome_quote" class="form-control" rows="2">Look sharp. Feel confident. Master craftsmanship &amp; precision grooming in Bommuru.</textarea>
+              </div>
+
+              <div class="form-group" style="grid-column: 1 / -1;">
+                <label class="form-label">About Us Story / Description</label>
+                <textarea id="cnt-about_text" class="form-control" rows="4">Welcome to Sri Devi One Saloon, Bommuru's trusted grooming destination. We blend traditional barbering excellence with contemporary styling techniques to deliver precision haircuts, clean shaves, rejuvenating facials, and relaxing grooming packages.</textarea>
+              </div>
+
+              <div class="form-group">
+                <label class="form-label">Salon Logo Image URL</label>
+                <div style="display: flex; gap: 8px;">
+                  <input type="text" id="cnt-logo_url" class="form-control" value="assets/logo.png" />
+                  <label class="btn btn-secondary btn-sm" style="flex-shrink: 0; cursor: pointer;">
+                    Upload <input type="file" id="upload-logo-file" accept="image/*" style="display: none;" />
+                  </label>
+                </div>
+              </div>
+
+              <div class="form-group">
+                <label class="form-label">Stylist / Owner Photo URL</label>
+                <div style="display: flex; gap: 8px;">
+                  <input type="text" id="cnt-owner_photo_url" class="form-control" value="assets/pavan_dad.png" />
+                  <label class="btn btn-secondary btn-sm" style="flex-shrink: 0; cursor: pointer;">
+                    Upload <input type="file" id="upload-owner-file" accept="image/*" style="display: none;" />
+                  </label>
+                </div>
+              </div>
+            </form>
+          </div>
+        </section>
+
+        <!-- ═════════════════════════════════════════════════════════
+             TAB 6: GALLERY & PHOTOS
+             ═════════════════════════════════════════════════════════ -->
+        <section class="tab-pane" id="pane-gallery">
+          <div class="table-card" style="padding: 24px; margin-bottom: 24px;">
+            <h3 class="table-title" style="margin-bottom: 14px;">Upload New Salon Photo</h3>
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 16px; align-items: flex-end;">
+              <div class="form-group">
+                <label class="form-label">Select Image File (JPG, PNG, WebP · Max 10MB)</label>
+                <input type="file" id="gallery-file-input" class="form-control" accept="image/*" />
+              </div>
+              <div class="form-group">
+                <label class="form-label">Photo Caption / Description</label>
+                <input type="text" id="gallery-caption-input" class="form-control" placeholder="e.g. Modern Barber Chairs &amp; Interior" />
+              </div>
+              <div class="form-group" style="width: 120px;">
+                <label class="form-label">Display Order</label>
+                <input type="number" id="gallery-order-input" class="form-control" value="0" />
+              </div>
+              <button type="button" class="btn btn-primary" id="upload-gallery-btn">
+                <span data-lucide="upload" style="width: 14px; height: 14px;"></span>
+                Upload to Gallery
+              </button>
+            </div>
+          </div>
+
+          <div class="table-card" style="padding: 24px;">
+            <h3 class="table-title" style="margin-bottom: 16px;">Current Salon Gallery Images</h3>
+            <div id="gallery-grid" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 18px;">
+              <!-- Dynamic Gallery Cards -->
+            </div>
+          </div>
+        </section>
+
+        <!-- ═════════════════════════════════════════════════════════
+             TAB 7: EMAIL TEMPLATES & AUTOMATION SETTINGS
+             ═════════════════════════════════════════════════════════ -->
+        <section class="tab-pane" id="pane-templates">
+          <!-- Automation Toggles Card -->
+          <div class="table-card" style="padding: 24px; margin-bottom: 24px;">
+            <h3 class="table-title" style="margin-bottom: 14px;">Email Automation Policies</h3>
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 20px;">
+              <div style="display: flex; align-items: center; justify-content: space-between; padding: 14px; background: var(--clr-bg-input); border: 1px solid var(--clr-border); border-radius: var(--radius-md);">
+                <div>
+                  <strong style="display: block; color: #ffffff; font-size: 13px;">3-Hour Follow-Up Emails</strong>
+                  <span style="font-size: 12px; color: var(--clr-text-muted);">Send thank-you 3 hours after appointment ends</span>
+                </div>
+                <input type="checkbox" id="policy-followup-enabled" checked style="accent-color: var(--clr-gold); width: 18px; height: 18px;" />
+              </div>
+
+              <div style="display: flex; align-items: center; justify-content: space-between; padding: 14px; background: var(--clr-bg-input); border: 1px solid var(--clr-border); border-radius: var(--radius-md);">
+                <div>
+                  <strong style="display: block; color: #ffffff; font-size: 13px;">Monthly Grooming Reminders</strong>
+                  <span style="font-size: 12px; color: var(--clr-text-muted);">Send recurring reminder 1 month after visit</span>
+                </div>
+                <input type="checkbox" id="policy-reminders-enabled" checked style="accent-color: var(--clr-gold); width: 18px; height: 18px;" />
+              </div>
+            </div>
+          </div>
+
+          <!-- Template Editor Card -->
+          <div class="table-card" style="padding: 24px;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 18px; flex-wrap: wrap; gap: 12px;">
+              <div>
+                <h3 class="table-title">Email Template Customizer</h3>
+                <p style="font-size: 12px; color: var(--clr-text-muted);">Choose a notification email template to view and edit its text and subject line.</p>
+              </div>
+              <div style="display: flex; gap: 10px;">
+                <select id="template-selector" class="form-control" style="width: 220px; font-weight: 600;">
+                  <option value="confirmation">Appointment Confirmation</option>
+                  <option value="followup_3hr">3-Hour Thank-You Follow-Up</option>
+                  <option value="monthly_reminder">Monthly Haircut Reminder</option>
+                  <option value="cancellation">Appointment Cancellation</option>
+                  <option value="password_reset">Admin Password Reset</option>
+                </select>
+                <button type="button" class="btn btn-primary" id="save-template-btn">
+                  <span data-lucide="save" style="width: 14px; height: 14px;"></span>
+                  Save Template
+                </button>
+              </div>
+            </div>
+
+            <div class="form-group" style="margin-bottom: 16px;">
+              <label class="form-label">Email Subject Line</label>
+              <input type="text" id="tpl-subject" class="form-control" />
+            </div>
+
+            <!-- Supported Placeholder Tag Pills -->
+            <div style="margin-bottom: 14px;">
+              <label class="form-label" style="margin-bottom: 6px; display: block;">Supported Placeholders (Click to insert):</label>
+              <div id="placeholder-pills" style="display: flex; flex-wrap: wrap; gap: 6px;">
+                <!-- Tag Pills -->
+              </div>
+            </div>
+
+            <div class="form-group" style="margin-bottom: 20px;">
+              <label class="form-label">Email Message Body (Plain Text / Markdown)</label>
+              <textarea id="tpl-body-text" class="form-control" rows="12" style="font-family: monospace; font-size: 13px;"></textarea>
+            </div>
+
+            <!-- Test Email Section -->
+            <div style="padding: 16px; background: var(--clr-bg-input); border: 1px solid var(--clr-border); border-radius: var(--radius-md); display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 12px;">
+              <div>
+                <strong style="color: #ffffff; font-size: 13px; display: block;">Send Test Email</strong>
+                <span style="font-size: 12px; color: var(--clr-text-muted);">Dispatches this template with simulated booking details to verify formatting</span>
+              </div>
+              <div style="display: flex; gap: 8px;">
+                <input type="email" id="test-recipient-email" class="form-control" placeholder="your-email@gmail.com" style="width: 240px;" />
+                <button type="button" class="btn btn-secondary btn-sm" id="send-test-email-btn">
+                  <span data-lucide="send" style="width: 14px; height: 14px;"></span>
+                  Send Test
+                </button>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <!-- ═════════════════════════════════════════════════════════
+             TAB 8: ACTIVITY LOGS
+             ═════════════════════════════════════════════════════════ -->
+        <section class="tab-pane" id="pane-activity">
+          <div class="table-card">
+            <div class="table-header-bar">
+              <h3 class="table-title">Administrative Audit Trail</h3>
+              <button type="button" class="btn btn-secondary btn-sm" id="refresh-activity-btn">
+                <span data-lucide="refresh-cw" style="width: 14px; height: 14px;"></span>
+                Refresh
+              </button>
+            </div>
+            <div class="table-responsive">
+              <table class="data-table">
+                <thead>
+                  <tr>
+                    <th>Timestamp (IST)</th>
+                    <th>Administrator</th>
+                    <th>Action</th>
+                    <th>Details</th>
+                    <th>IP Address</th>
+                  </tr>
+                </thead>
+                <tbody id="activity-tbody">
+                  <tr><td colspan="5" style="text-align: center; color: var(--clr-text-muted); padding: 30px;">Loading audit activity...</td></tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </section>
+
+        <!-- ═════════════════════════════════════════════════════════
+             TAB 9: ADMIN SETTINGS & SECURITY
+             ═════════════════════════════════════════════════════════ -->
+        <section class="tab-pane" id="pane-settings">
+          <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(360px, 1fr)); gap: 24px;">
+
+            <!-- Change Password Card -->
+            <div class="table-card" style="padding: 24px;">
+              <h3 class="table-title" style="margin-bottom: 6px;">Change Administrator Password</h3>
+              <p style="font-size: 12px; color: var(--clr-text-muted); margin-bottom: 18px;">
+                Ensure your account uses a secure password of at least 8 characters.
+              </p>
+
+              <form id="change-password-form" style="display: flex; flex-direction: column; gap: 14px;">
+                <div class="form-group">
+                  <label class="form-label">Current Password</label>
+                  <input type="password" id="current-password" class="form-control" required />
+                </div>
+                <div class="form-group">
+                  <label class="form-label">New Password (min 8 characters)</label>
+                  <input type="password" id="new-password" class="form-control" minlength="8" required />
+                </div>
+                <div class="form-group">
+                  <label class="form-label">Confirm New Password</label>
+                  <input type="password" id="confirm-new-password" class="form-control" minlength="8" required />
+                </div>
+                <button type="submit" class="btn btn-primary" style="margin-top: 6px;">
+                  <span data-lucide="key" style="width: 14px; height: 14px;"></span>
+                  Update Admin Password
+                </button>
+              </form>
+            </div>
+
+            <!-- Profile & Account Details -->
+            <div class="table-card" style="padding: 24px;">
+              <h3 class="table-title" style="margin-bottom: 6px;">Admin Profile Information</h3>
+              <p style="font-size: 12px; color: var(--clr-text-muted); margin-bottom: 18px;">
+                Update registered administrator username and email address for recovery notices.
+              </p>
+
+              <form id="update-profile-form" style="display: flex; flex-direction: column; gap: 14px;">
+                <div class="form-group">
+                  <label class="form-label">Admin Username</label>
+                  <input type="text" id="prof-username" class="form-control" required />
+                </div>
+                <div class="form-group">
+                  <label class="form-label">Admin Email Address</label>
+                  <input type="email" id="prof-email" class="form-control" required />
+                </div>
+                <button type="submit" class="btn btn-secondary" style="margin-top: 6px;">
+                  <span data-lucide="save" style="width: 14px; height: 14px;"></span>
+                  Save Profile Changes
+                </button>
+              </form>
+
+              <div style="margin-top: 24px; padding-top: 18px; border-top: 1px solid var(--clr-border);">
+                <div style="font-size: 12px; color: var(--clr-text-muted);">
+                  <div>Server Timezone: <strong>Asia/Kolkata (IST)</strong></div>
+                  <div style="margin-top: 4px;">Hosting Platform: <strong>Render / Python Gunicorn</strong></div>
+                </div>
+              </div>
+            </div>
+
+          </div>
+        </section>
+
+      </div>
+    </main>
+  </div>
+
+  <!-- ═════════════════════════════════════════════════════════════
+       MODALS
+       ═════════════════════════════════════════════════════════════ -->
+
+  <!-- 1. APPOINTMENT DETAILS MODAL -->
+  <div class="modal-backdrop" id="modal-appointment-details">
+    <div class="modal-dialog">
+      <div class="modal-header">
+        <h3 class="modal-title">Appointment Details #<span id="dtl-apt-id"></span></h3>
+        <button type="button" class="modal-close" data-close-modal>&times;</button>
+      </div>
+      <div class="modal-body" id="dtl-apt-body">
+        <!-- Rendered via JS -->
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-close-modal>Close</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 2. RESCHEDULE MODAL -->
+  <div class="modal-backdrop" id="modal-reschedule">
+    <div class="modal-dialog" style="max-width: 440px;">
+      <div class="modal-header">
+        <h3 class="modal-title">Reschedule Appointment #<span id="resched-apt-id"></span></h3>
+        <button type="button" class="modal-close" data-close-modal>&times;</button>
+      </div>
+      <form id="reschedule-form">
+        <div class="modal-body">
+          <p style="font-size: 13px; color: var(--clr-text-muted); margin-bottom: 16px;">
+            Choose a new date and time for <strong id="resched-cust-name" style="color: #fff;"></strong>. 
+            The 3-hour follow-up and monthly reminders will be recalculated automatically.
+          </p>
+          <div class="form-group" style="margin-bottom: 14px;">
+            <label class="form-label">New Appointment Date</label>
+            <input type="date" id="resched-date" class="form-control" required />
+          </div>
+          <div class="form-group">
+            <label class="form-label">New Appointment Time</label>
+            <input type="time" id="resched-time" class="form-control" required />
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-close-modal>Cancel</button>
+          <button type="submit" class="btn btn-primary">Confirm Reschedule</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- 3. ADD / EDIT SERVICE MODAL -->
+  <div class="modal-backdrop" id="modal-service">
+    <div class="modal-dialog" style="max-width: 580px;">
+      <div class="modal-header">
+        <h3 class="modal-title" id="service-modal-title">Add New Service</h3>
+        <button type="button" class="modal-close" data-close-modal>&times;</button>
+      </div>
+      <form id="service-form">
+        <input type="hidden" id="svc-id" />
+        <div class="modal-body" style="display: flex; flex-direction: column; gap: 14px;">
+          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 14px;">
+            <div class="form-group">
+              <label class="form-label">Service Name *</label>
+              <input type="text" id="svc-name" class="form-control" placeholder="e.g. Beard Styling" required />
+            </div>
+            <div class="form-group">
+              <label class="form-label">Unique Slug/ID *</label>
+              <input type="text" id="svc-slug" class="form-control" placeholder="e.g. beard_styling" required />
+            </div>
+          </div>
+
+          <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 14px;">
+            <div class="form-group">
+              <label class="form-label">Price (₹) *</label>
+              <input type="number" id="svc-price" class="form-control" min="0" placeholder="120" required />
+            </div>
+            <div class="form-group">
+              <label class="form-label">Discount Price (₹)</label>
+              <input type="number" id="svc-discount" class="form-control" min="0" placeholder="Optional" />
+            </div>
+            <div class="form-group">
+              <label class="form-label">Duration (mins)</label>
+              <input type="number" id="svc-duration" class="form-control" min="5" value="30" required />
+            </div>
+          </div>
+
+          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 14px;">
+            <div class="form-group">
+              <label class="form-label">Category</label>
+              <select id="svc-category" class="form-control">
+                <option value="Hair & Grooming">Hair &amp; Grooming</option>
+                <option value="Skin Care">Skin Care</option>
+                <option value="Combos">Combos</option>
+                <option value="Special Treatments">Special Treatments</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label class="form-label">Display Order</label>
+              <input type="number" id="svc-order" class="form-control" value="0" />
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label">Service Description</label>
+            <textarea id="svc-desc" class="form-control" rows="2" placeholder="Brief summary for customers..."></textarea>
+          </div>
+
+          <!-- Image Upload & Preview -->
+          <div class="form-group">
+            <label class="form-label">Service Image</label>
+            <div style="display: flex; gap: 10px; align-items: center;">
+              <input type="text" id="svc-image" class="form-control" placeholder="assets/img.jpeg or URL" />
+              <label class="btn btn-secondary btn-sm" style="flex-shrink: 0; cursor: pointer;">
+                Browse <input type="file" id="svc-file-upload" accept="image/*" style="display: none;" />
+              </label>
+            </div>
+            <div id="svc-preview-box" style="margin-top: 8px; display: none;">
+              <img id="svc-preview-img" src="" alt="Preview" style="max-height: 80px; border-radius: 6px; border: 1px solid var(--clr-border);" />
+            </div>
+          </div>
+
+          <div class="form-checkbox-row" style="margin-top: 4px;">
+            <label class="checkbox-label">
+              <input type="checkbox" id="svc-active" checked />
+              <span style="color: #fff; font-weight: 600;">Active &amp; Bookable on Public Website</span>
+            </label>
+          </div>
+        </div>
+
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-close-modal>Cancel</button>
+          <button type="submit" class="btn btn-primary" id="svc-save-btn">Save Service</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Toast Notification Container -->
+  <div class="toast-container" id="toast-container"></div>
+
+  <!-- Admin JS Engine -->
+  <script src="/admin/admin.js"></script>
+</body>
+</html>

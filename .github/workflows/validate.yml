@@ -36,3 +36,8 @@ jobs:
     - name: Validate JavaScript frontend syntax
       run: |
         node -c js/script.js
+        node -c admin/admin.js
+
+    - name: Run Test Suite
+      run: |
+        python -m unittest test_booking_automation.py

@@ -889,22 +889,6 @@
                 <span class="field-error" id="booking-email-error" role="alert" aria-live="polite"></span>
               </div>
 
-              <!-- Service -->
-              <div class="form-group">
-                <label for="booking-service" class="form-label">Service <span class="required-mark" aria-hidden="true">*</span></label>
-                <select id="booking-service" name="booking-service" class="form-control form-select" required aria-required="true" aria-describedby="booking-service-error">
-                  <option value="" disabled selected>Select a service…</option>
-                  <option value="Haircut (₹120)">Haircut — ₹120</option>
-                  <option value="Shaving (₹70)">Shaving — ₹70</option>
-                  <option value="Haircut + Shaving Combo (₹170)">Haircut + Shaving Combo — ₹170</option>
-                  <option value="Scrub (₹100)">Scrub — ₹100</option>
-                  <option value="Tan Pack (₹150)">Tan Pack — ₹150</option>
-                  <option value="Lite Facial (₹250)">Lite Facial — ₹250</option>
-                  <option value="Full Facial (₹600–₹800)">Full Facial — ₹600–₹800</option>
-                </select>
-                <span class="field-error" id="booking-service-error" role="alert" aria-live="polite"></span>
-              </div>
-
               <!-- Date -->
               <div class="form-group">
                 <label for="booking-date" class="form-label">Preferred Date <span class="required-mark" aria-hidden="true">*</span></label>
@@ -936,15 +920,160 @@
               </div>
 
               <!-- Message -->
-              <div class="form-group form-group--full">
+              <div class="form-group">
                 <label for="booking-message" class="form-label">Additional Message (Optional)</label>
-                <textarea
+                <input
+                  type="text"
                   id="booking-message"
                   name="booking-message"
                   class="form-control"
-                  rows="3"
-                  placeholder="Any specific request or note…"
-                ></textarea>
+                  placeholder="Any specific style or request…"
+                />
+              </div>
+
+              <!-- Services Selection (Full Width) -->
+              <div class="form-group form-group--full" id="booking-services-container">
+                <div class="service-selection-header">
+                  <label class="form-label" id="services-group-label">
+                    Select Services <span class="required-mark" aria-hidden="true">*</span>
+                  </label>
+                  <span class="service-selection-hint">Choose one or multiple salon services</span>
+                </div>
+
+                <div class="service-selection-grid" role="group" aria-labelledby="services-group-label" id="service-selection-grid">
+                  <!-- Cutting -->
+                  <label class="service-select-card" for="svc-cutting" data-service-id="cutting" data-price="120" data-name="Cutting">
+                    <input type="checkbox" id="svc-cutting" name="services" value="cutting" class="service-checkbox sr-only" data-price="120" data-name="Cutting" aria-labelledby="svc-cutting-name svc-cutting-price" />
+                    <div class="service-card-box">
+                      <div class="service-card-check" aria-hidden="true">
+                        <span data-lucide="check" class="icon-check"></span>
+                      </div>
+                      <div class="service-card-details">
+                        <div class="service-card-title-row">
+                          <span class="service-card-name" id="svc-cutting-name">Cutting</span>
+                          <span class="service-card-price" id="svc-cutting-price">₹120</span>
+                        </div>
+                        <span class="service-card-meta">Precision cut &amp; styling</span>
+                      </div>
+                    </div>
+                  </label>
+
+                  <!-- Shaving -->
+                  <label class="service-select-card" for="svc-shaving" data-service-id="shaving" data-price="70" data-name="Shaving">
+                    <input type="checkbox" id="svc-shaving" name="services" value="shaving" class="service-checkbox sr-only" data-price="70" data-name="Shaving" aria-labelledby="svc-shaving-name svc-shaving-price" />
+                    <div class="service-card-box">
+                      <div class="service-card-check" aria-hidden="true">
+                        <span data-lucide="check" class="icon-check"></span>
+                      </div>
+                      <div class="service-card-details">
+                        <div class="service-card-title-row">
+                          <span class="service-card-name" id="svc-shaving-name">Shaving</span>
+                          <span class="service-card-price" id="svc-shaving-price">₹70</span>
+                        </div>
+                        <span class="service-card-meta">Clean &amp; sharp shave</span>
+                      </div>
+                    </div>
+                  </label>
+
+                  <!-- Cutting + Shaving Combo -->
+                  <label class="service-select-card" for="svc-combo" data-service-id="combo" data-price="170" data-name="Cutting + Shaving Combo">
+                    <input type="checkbox" id="svc-combo" name="services" value="combo" class="service-checkbox sr-only" data-price="170" data-name="Cutting + Shaving Combo" aria-labelledby="svc-combo-name svc-combo-price" />
+                    <div class="service-card-box">
+                      <div class="service-card-check" aria-hidden="true">
+                        <span data-lucide="check" class="icon-check"></span>
+                      </div>
+                      <div class="service-card-details">
+                        <div class="service-card-title-row">
+                          <span class="service-card-name" id="svc-combo-name">Cutting + Shaving Combo</span>
+                          <span class="service-card-price" id="svc-combo-price">₹170</span>
+                        </div>
+                        <span class="service-card-meta">Best value combo grooming</span>
+                      </div>
+                    </div>
+                  </label>
+
+                  <!-- Scrub -->
+                  <label class="service-select-card" for="svc-scrub" data-service-id="scrub" data-price="100" data-name="Scrub">
+                    <input type="checkbox" id="svc-scrub" name="services" value="scrub" class="service-checkbox sr-only" data-price="100" data-name="Scrub" aria-labelledby="svc-scrub-name svc-scrub-price" />
+                    <div class="service-card-box">
+                      <div class="service-card-check" aria-hidden="true">
+                        <span data-lucide="check" class="icon-check"></span>
+                      </div>
+                      <div class="service-card-details">
+                        <div class="service-card-title-row">
+                          <span class="service-card-name" id="svc-scrub-name">Scrub</span>
+                          <span class="service-card-price" id="svc-scrub-price">₹100</span>
+                        </div>
+                        <span class="service-card-meta">Exfoliating skin scrub</span>
+                      </div>
+                    </div>
+                  </label>
+
+                  <!-- Tan Pack -->
+                  <label class="service-select-card" for="svc-tanpack" data-service-id="tan_pack" data-price="150" data-name="Tan Pack">
+                    <input type="checkbox" id="svc-tanpack" name="services" value="tan_pack" class="service-checkbox sr-only" data-price="150" data-name="Tan Pack" aria-labelledby="svc-tanpack-name svc-tanpack-price" />
+                    <div class="service-card-box">
+                      <div class="service-card-check" aria-hidden="true">
+                        <span data-lucide="check" class="icon-check"></span>
+                      </div>
+                      <div class="service-card-details">
+                        <div class="service-card-title-row">
+                          <span class="service-card-name" id="svc-tanpack-name">Tan Pack</span>
+                          <span class="service-card-price" id="svc-tanpack-price">₹150</span>
+                        </div>
+                        <span class="service-card-meta">De-tan skin treatment</span>
+                      </div>
+                    </div>
+                  </label>
+
+                  <!-- Lite Facial -->
+                  <label class="service-select-card" for="svc-litefacial" data-service-id="lite_facial" data-price="250" data-name="Lite Facial">
+                    <input type="checkbox" id="svc-litefacial" name="services" value="lite_facial" class="service-checkbox sr-only" data-price="250" data-name="Lite Facial" aria-labelledby="svc-litefacial-name svc-litefacial-price" />
+                    <div class="service-card-box">
+                      <div class="service-card-check" aria-hidden="true">
+                        <span data-lucide="check" class="icon-check"></span>
+                      </div>
+                      <div class="service-card-details">
+                        <div class="service-card-title-row">
+                          <span class="service-card-name" id="svc-litefacial-name">Lite Facial</span>
+                          <span class="service-card-price" id="svc-litefacial-price">₹250</span>
+                        </div>
+                        <span class="service-card-meta">Cleanse &amp; instant glow</span>
+                      </div>
+                    </div>
+                  </label>
+
+                  <!-- Full Facial -->
+                  <label class="service-select-card" for="svc-fullfacial" data-service-id="full_facial" data-price="600" data-name="Full Facial">
+                    <input type="checkbox" id="svc-fullfacial" name="services" value="full_facial" class="service-checkbox sr-only" data-price="600" data-name="Full Facial" aria-labelledby="svc-fullfacial-name svc-fullfacial-price" />
+                    <div class="service-card-box">
+                      <div class="service-card-check" aria-hidden="true">
+                        <span data-lucide="check" class="icon-check"></span>
+                      </div>
+                      <div class="service-card-details">
+                        <div class="service-card-title-row">
+                          <span class="service-card-name" id="svc-fullfacial-name">Full Facial</span>
+                          <span class="service-card-price" id="svc-fullfacial-price">₹600</span>
+                        </div>
+                        <span class="service-card-meta">Deep cleansing renewal</span>
+                      </div>
+                    </div>
+                  </label>
+                </div>
+
+                <span class="field-error" id="booking-service-error" role="alert" aria-live="polite"></span>
+
+                <!-- Live Dynamic Total Price Bar -->
+                <div class="booking-live-summary" id="booking-live-summary" aria-live="polite">
+                  <div class="live-summary-left">
+                    <span class="live-summary-title">Selected Services:</span>
+                    <span class="live-selected-services empty" id="live-selected-services-text">None selected</span>
+                  </div>
+                  <div class="live-summary-right">
+                    <span class="live-total-label">Estimated Total:</span>
+                    <span class="live-total-amount" id="live-total-price">₹0</span>
+                  </div>
+                </div>
               </div>
             </div>
 
@@ -1273,6 +1402,7 @@
             <li><a href="#reviews" class="footer-link">Reviews</a></li>
             <li><a href="#booking" class="footer-link">Book Appointment</a></li>
             <li><a href="#contact" class="footer-link">Contact</a></li>
+            <li><a href="/admin" class="footer-link" style="color: rgba(197, 160, 89, 0.85);"><span data-lucide="lock" style="width: 12px; height: 12px; display: inline-block; vertical-align: middle; margin-right: 4px;"></span>Staff Portal</a></li>
           </ul>
         </div>
 
