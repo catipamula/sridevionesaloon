@@ -251,7 +251,7 @@ class TestSriDeviOneSaloonAutomation(unittest.TestCase):
         """3, 4, 5. Verify email subjects, sample text, itemized prices, branding, and maps link."""
         apt = {
             "name": "Chakravarthi Atipamula",
-            "email": "chakravarthy.atipamula@gmail.com",
+            "email": "pavankoneti85@gmail.com",
             "phone": "+91 73961 44248",
             "service": "Cutting (₹120), Shaving (₹70)",
             "services_json": json.dumps([

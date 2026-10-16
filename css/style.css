@@ -2321,9 +2321,10 @@ textarea.form-control {
 .service-clickable-list {
   display: flex;
   flex-direction: column;
+  width: 90%;
+  margin: 0 auto 12px;
   gap: 10px;
   margin-top: 6px;
-  margin-bottom: 12px;
 }
 
 .service-select-item {

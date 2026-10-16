@@ -103,7 +103,7 @@ EMAIL_SENDER=Sri Devi One Saloon <onboarding@resend.dev>
 
 # Salon Business Details
 SALON_NAME=Sri Devi One Saloon
-SALON_EMAIL=chakravarthy.atipamula@gmail.com
+SALON_EMAIL=pavankoneti85@gmail.com
 SALON_PHONE=+91 73961 44248
 SALON_ADDRESS=Bommuru Centre, Near NTR Statue, Rajuvolu Road, Kotta Bommuru, AP 533124, India
 SALON_MAPS_URL=https://maps.app.goo.gl/suHNM6yaQBY29TX8A
@@ -209,7 +209,7 @@ Sri Devi One Saloon features a dedicated, secure **Admin Portal & CMS** allowing
 On initial database setup, a default administrator account is automatically provisioned:
 - **Username**: `admin`
 - **Default Password**: `SriDevi@Admin2026`
-- **Registered Email**: Configured via `ADMIN_EMAIL` in `.env` (defaults to `chakravarthy.atipamula@gmail.com`)
+- **Registered Email**: Configured via `ADMIN_EMAIL` in `.env` (defaults to `pavankoneti85@gmail.com`)
 
 > [!IMPORTANT]
 > **Mandatory Password Change**: Upon first logging in with default credentials, a persistent security banner prompts the owner to change their password immediately in **Settings**. Once changed, the `must_change_password` flag is permanently cleared.

@@ -37,7 +37,7 @@ def sanitize_env_value(key, default=""):
 
 
 SALON_NAME = sanitize_env_value("SALON_NAME", "Sri Devi One Saloon")
-SALON_EMAIL = sanitize_env_value("SALON_EMAIL", "chakravarthy.atipamula@gmail.com")
+SALON_EMAIL = sanitize_env_value("SALON_EMAIL", "pavankoneti85@gmail.com")
 SALON_PHONE = sanitize_env_value("SALON_PHONE", "+91 73961 44248")
 SALON_MAPS_URL = sanitize_env_value("SALON_MAPS_URL", "https://maps.app.goo.gl/suHNM6yaQBY29TX8A")
 SALON_TIMEZONE = sanitize_env_value("SALON_TIMEZONE", "Asia/Kolkata")
@@ -780,7 +780,7 @@ def send_via_resend(destination_email: str, subject: str, plain_body: str, html_
         err_msg = err.read().decode("utf-8", errors="ignore")
         # Handle Resend testing restriction gracefully: forward copy to owner so alerts are not lost
         if "validation_error" in err_msg and "only send testing emails to your own email address" in err_msg:
-            fallback_to = SALON_EMAIL or "chakravarthy.atipamula@gmail.com"
+            fallback_to = SALON_EMAIL or "pavankoneti85@gmail.com"
             if destination_email.lower() != fallback_to.lower():
                 payload["to"] = [fallback_to]
                 payload["subject"] = f"[Customer Copy: {destination_email}] {subject}"
